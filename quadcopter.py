@@ -28,6 +28,8 @@
 #2013.08.13 added pid.py
 #2013.08.18  added thread in rpycontrol.py
 #2013.08.18  added angle class
+#2014.10.1 added netscan
+#2014.10.14 added load and save  function
 
 import logging
 from pid import pid
@@ -36,7 +38,7 @@ from motor import motor
 from rc import rc
 from netscan import netscan
 from prop import prop
-
+from time import sleep
 
 class quadcopter(object):
 
@@ -67,9 +69,9 @@ class quadcopter(object):
         self.pidR_rate = pid()
         self.pidP_rate = pid()
         self.pidY_rate = pid()
+        self.ip = '192.168.0.3'
 
-        self.netscan = netscan(ip='192.168.0.3')
-
+        self.netscan = netscan(self.ip)
 
         #for quadricopter phisics calculations- not used yet
         self.prop = prop(9, 4.7, 1)
@@ -77,6 +79,57 @@ class quadcopter(object):
         self.mass = 2  # [Kg]
         self.barLenght = 0.23  # [mm]
         self.barMass = 0.15  # [kg]
+
+    def load(self, file_name):
+        try:
+            with open(file_name, 'r') as cfg_file:
+                ver= self.getInt(cfg_file)
+                if ver is not 1:
+                    self.logger.critical('cfg file not compatible: need version 1')
+                self.ip = self.getStr(cfg_file)
+                self.motor[0].pin = self.getInt(cfg_file)
+                self.motor[1].pin = self.getInt(cfg_file)
+                self.motor[2].pin = self.getInt(cfg_file)
+                self.motor[3].pin = self.getInt(cfg_file)
+                cfg_file.flush()
+                sleep (20)
+
+        except IOError, err:
+            self.logger.critical('Error %d, %s accessing file: %s', err.errno, err.strerror, file_name)
+
+    def getStr(self, cfg_file):
+        strg = cfg_file.readline()
+        while strg[0] == '#':
+            self.logger.error('Loading comment %s ', strg)
+            strg = cfg_file.readline()
+        strg = strg.split('=')
+        self.logger.error('Loading data %s ', strg[1])
+        return strg[1]
+
+    def getInt(self, cfg_file):
+        strg = cfg_file.readline()
+        while strg[0] == '#':
+            self.logger.error('Loading comment %s ', strg)
+            strg = cfg_file.readline()
+        strg = strg.split('=')
+        self.logger.error('Loading data %s ', int(strg[1]))
+        return int(strg[1])
+
+    def save(self, file_name):
+
+        #remember to use ''PARAM_NAME' + '='
+        try:
+            with open(file_name, 'w+') as cfg_file:
+                cfg_file.write('ver=1')
+                cfg_file.write('IP=%s\n' % self.ip) #example for string
+                cfg_file.write('M0=%d\n' % self.motor[0].pin)
+                cfg_file.write('M1=%d\n' % self.motor[1].pin)
+                cfg_file.write('M2=%d\n' % self.motor[2].pin)
+                cfg_file.write('M3=%d\n' % self.motor[3].pin)
+                cfg_file.flush()
+
+        except IOError, err:
+            self.logger.critical('Error %d, %s accessing file: %s', err.errno, err.strerror,file_name)
 
 
     def start(self):

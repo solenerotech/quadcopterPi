@@ -42,6 +42,10 @@
 #added logger manager for all the classes
 #added myQ.start()
 
+#2014.10.1
+#beta 3
+#added netscan in quadcopter to verify the connection with remote control (device with fixed ip)
+
 
 
 def initLog():
@@ -223,6 +227,7 @@ datalog = ''
 #update display every displaytime [s]
 displayCounter = 0
 
+
 #manage params
 parser = argparse.ArgumentParser()
 parser.add_argument('-d', dest='debug', action='store_true', help='set debug leveland save in : myQ_log.txt ')
@@ -236,6 +241,8 @@ debuglev = args.debug
 netscanning = args.netscan
 
 #TODO metti netscan on di default
+#TODO add ip address as parameter or include it in a configuration file
+
 
 #init logger
 logger = setupLogger('myQ', debuglev, 'myQ_log.txt')
@@ -247,13 +254,18 @@ myQ = quadcopter('qpi', screen, pin0=18, pin1=23, pin2=24, pin3=25, simulation=F
 #GPIO: 18 23 24 25
 #pin : 12 16 18 22
 
+myQ.load('myQ_cfg.txt')
+
+
 #Init sensor
 if calibIMU:
     myQ.sensor.calibrate()
 
 myQ.start()
 
-if netscanning is False:
+if netscanning is True:
+    myQ.netscan.start()
+else:
     myQ.netscan.stop()
     myQ.netscan.connectionUp = True
 

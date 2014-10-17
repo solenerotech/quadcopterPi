@@ -1,0 +1,9 @@
+#Quadcopter cfg file version 1
+ver=1
+#remote control IP address 
+IP=192.168.0.3
+#raspberry GPIO 
+M0=18
+M1=23
+M2=24
+M3=25
