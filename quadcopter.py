@@ -30,6 +30,8 @@
 #2013.08.18  added angle class
 #2014.10.1 added netscan
 #2014.10.14 added load and save  function
+#2014.10.18 moved the screen directly inside quadcopter
+#TODO verificare perche l'imput adesso e' immediato e non attende piu un tot...
 
 import logging
 from pid import pid
@@ -38,11 +40,12 @@ from motor import motor
 from rc import rc
 from netscan import netscan
 from prop import prop
-from time import sleep
+from display import display
+
 
 class quadcopter(object):
 
-    def __init__(self, name, interface, pin0=18, pin1=23, pin2=24, pin3=25, simulation=True):
+    def __init__(self, name, pin0=18, pin1=23, pin2=24, pin3=25, simulation=True):
 
 #GPIO: 18 23 24 25
 #pin : 12 16 18 22
@@ -50,7 +53,6 @@ class quadcopter(object):
         self.logger = logging.getLogger('myQ.quadcopter')
         self.name = name
         self.simulation = simulation
-
 
         self.motor = [motor('M' + str(i), 0) for i in xrange(4)]
         self.motor[0] = motor('M0', pin0, kv=1000, WMin=0, WMax=100, simulation=self.simulation)
@@ -60,8 +62,9 @@ class quadcopter(object):
 
         self.sensor = sensor()
 
-        self.screen = interface
-        self.rc = rc(self.screen)
+        self.display = display(self)
+
+        self.rc = rc(self.display.screen)
 
         self.pidR = pid()
         self.pidP = pid()
@@ -73,6 +76,11 @@ class quadcopter(object):
 
         self.netscan = netscan(self.ip)
 
+        self.savelog = False
+        self.calibIMU = False
+        self.debuglev = 0
+        self.netscanning = False
+
         #for quadricopter phisics calculations- not used yet
         self.prop = prop(9, 4.7, 1)
         self.voltage = 12  # [V]
@@ -83,7 +91,7 @@ class quadcopter(object):
     def load(self, file_name):
         try:
             with open(file_name, 'r') as cfg_file:
-                ver= self.getInt(cfg_file)
+                ver = self.getInt(cfg_file)
                 if ver is not 1:
                     self.logger.critical('cfg file not compatible: need version 1')
                 self.ip = self.getStr(cfg_file)
@@ -92,7 +100,6 @@ class quadcopter(object):
                 self.motor[2].pin = self.getInt(cfg_file)
                 self.motor[3].pin = self.getInt(cfg_file)
                 cfg_file.flush()
-                sleep (20)
 
         except IOError, err:
             self.logger.critical('Error %d, %s accessing file: %s', err.errno, err.strerror, file_name)
@@ -100,19 +107,19 @@ class quadcopter(object):
     def getStr(self, cfg_file):
         strg = cfg_file.readline()
         while strg[0] == '#':
-            self.logger.error('Loading comment %s ', strg)
+            self.logger.debug('Loading comment %s ', strg)
             strg = cfg_file.readline()
         strg = strg.split('=')
-        self.logger.error('Loading data %s ', strg[1])
+        self.logger.debug('Loading data %s ', strg[1])
         return strg[1]
 
     def getInt(self, cfg_file):
         strg = cfg_file.readline()
         while strg[0] == '#':
-            self.logger.error('Loading comment %s ', strg)
+            self.logger.debug('Loading comment %s ', strg)
             strg = cfg_file.readline()
         strg = strg.split('=')
-        self.logger.error('Loading data %s ', int(strg[1]))
+        self.logger.debug('Loading data %d ', int(strg[1]))
         return int(strg[1])
 
     def save(self, file_name):
@@ -121,7 +128,7 @@ class quadcopter(object):
         try:
             with open(file_name, 'w+') as cfg_file:
                 cfg_file.write('ver=1')
-                cfg_file.write('IP=%s\n' % self.ip) #example for string
+                cfg_file.write('IP=%s\n' % self.ip)  # example for string
                 cfg_file.write('M0=%d\n' % self.motor[0].pin)
                 cfg_file.write('M1=%d\n' % self.motor[1].pin)
                 cfg_file.write('M2=%d\n' % self.motor[2].pin)
@@ -129,13 +136,13 @@ class quadcopter(object):
                 cfg_file.flush()
 
         except IOError, err:
-            self.logger.critical('Error %d, %s accessing file: %s', err.errno, err.strerror,file_name)
-
+            self.logger.critical('Error %d, %s accessing file: %s', err.errno, err.strerror, file_name)
 
     def start(self):
         "start  all motors,sensor,rc"
 
         self.sensor.start()
+        self.display.start()
         self.rc.start()
         self.netscan.start()
         #Init motors
@@ -144,13 +151,15 @@ class quadcopter(object):
             self.motor[i].setW(0)
             #sleep(1) # used to ear clearly all motor beep status
 
-
     def stop(self):
         "stop all motors,sensor,rc"
+
+        self.display.stop()
 
         for i in xrange(4):
             self.motor[i].stop()
 
+        self.netscan.stop()
         self.sensor.stop()
         self.rc.stop()
 
@@ -160,6 +169,3 @@ class quadcopter(object):
         #TODO not used . Remove it
         for i in xrange(4):
             self.motor[i].saveWh()
-
-
-

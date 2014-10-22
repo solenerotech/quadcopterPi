@@ -53,6 +53,13 @@ class rc(threading.Thread):
 
         self.cycling = True
         self.command = -1
+        self.mode = 0
+        self.MODE_INIT = 0
+        self.MODE_ESC = 1
+        self.MODE_MOTOR = 2
+        self.MODE_PID_TUNING = 3
+        self.MODE_FLYING = 4
+        self.MODE_UAV = 5
 
 #TODO add  setup() function for setting the min/max values, instead of put all in the init()
 #TODO use self.Joystick  instead of angles , in order to have a variable behaviour
@@ -94,6 +101,12 @@ class rc(threading.Thread):
                     self.command = 8
                 elif res == ord('9'):
                     self.command = 9
+                elif res == curses.KEY_RIGHT:
+                    self.mode =self.mode +1
+                    self.command = -1
+                elif res == curses.KEY_LEFT:
+                    self.mode =self.mode -1
+                    self.command = -1
                 elif res == ord('a'):
                     self.roll = self.roll + 1
                 elif res == ord('z'):
@@ -108,6 +121,11 @@ class rc(threading.Thread):
                 elif res == ord('f'):
                     self.throttle = self.throttle - 1
 
+                if self.mode < 0:
+                    self.mode = 0
+                elif self.mode > 5:
+                    self.mode = 5
+
                 if self.throttle < self.throttleMin:
                     self.throttle = self.throttleMin
                 elif self.throttle > self.throttleMax:
@@ -117,10 +135,12 @@ class rc(threading.Thread):
                     self.roll = self.rollMin
                 elif self.roll > self.rollMax:
                     self.roll = self.rollMax
+
                 if self.pitch < self.pitchMin:
                     self.pitch = self.pitchMin
                 elif self.pitch > self.pitchMax:
                     self.pitch = self.pitchMax
+
                 if self.yaw < self.yawMin:
                     self.yaw = self.yawMin
                 elif self.yaw > self.yawMax:
@@ -128,4 +148,4 @@ class rc(threading.Thread):
 
     def stop(self):
         self.logger.debug('RC stopping...')
-
+        self.cycling = False

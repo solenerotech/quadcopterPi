@@ -133,7 +133,7 @@ class motor(object):
             self.PWM.add_channel_pulse(1, self.pin, 0, 1000)
             #self.servo.stop_servo(self.pin)
             self.powered = False
-            self.logger.debug('Motor %s stopped', self.name)
+        self.logger.debug('Motor %s stopped', self.name)
 
     def getW(self):
         "retuns current W%"

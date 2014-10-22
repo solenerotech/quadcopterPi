@@ -30,8 +30,6 @@
 #at startup all motors starts at 5%
 #to start pid control set the rc.command 1 (R),2(RP) or other to stop pid control'
 
-#TODO
-#creando class display, con altro thread in parallelo...
 
 
 #2014.08.02
@@ -45,7 +43,6 @@
 #2014.10.1
 #beta 3
 #added netscan in quadcopter to verify the connection with remote control (device with fixed ip)
-
 
 
 def initLog():
@@ -90,143 +87,17 @@ def addLog():
     return s1
 
 
-def initDisplay():
-
-    logger.debug('Display starting...')
-    #Init display
-    # turn off input echoing
-    curses.noecho()
-    # respond to keys immediately (don't wait for enter)
-    curses.cbreak()
-    # map arrow keys to special v1alues
-    screen.keypad(True)
-
-
-def showDisplay():
-
-        screen.clear()
-        i = 1
-        screen.addstr(i, 0, '|-------------------------------------------------|')
-
-        i = i + 1
-        screen.addstr(i, 00, '|motor')
-        screen.addstr(i, 10, '|')
-        screen.addstr(i, 11, '|' + myQ.motor[0].name)
-        screen.addstr(i, 20, '|')
-        screen.addstr(i, 21, '|' + myQ.motor[1].name)
-        screen.addstr(i, 30, '|')
-        screen.addstr(i, 31, '|' + myQ.motor[2].name)
-        screen.addstr(i, 40, '|')
-        screen.addstr(i, 41, '|' + myQ.motor[3].name)
-        screen.addstr(i, 50, '|')
-
-        i = i + 1
-        screen.addstr(i, 0, '|W')
-        screen.addstr(i, 10, '|W')
-        screen.addstr(i, 11, str(myQ.motor[0].getW()))
-        screen.addstr(i, 20, '|')
-        screen.addstr(i, 21, str(myQ.motor[1].getW()))
-        screen.addstr(i, 30, '|')
-        screen.addstr(i, 31, str(myQ.motor[2].getW()))
-        screen.addstr(i, 40, '|')
-        screen.addstr(i, 41, str(myQ.motor[3].getW()))
-        screen.addstr(i, 50, '|')
-
-        i = i + 1
-        screen.addstr(i, 0, '|-------------------------------------------------|')
-        i = i + 1
-        screen.addstr(i, 00, '|')
-        screen.addstr(i, 10, '|')
-        screen.addstr(i, 11, 'Roll')
-        screen.addstr(i, 20, '|')
-        screen.addstr(i, 21, 'Pitch')
-        screen.addstr(i, 30, '|')
-        screen.addstr(i, 31, 'Yaw')
-        screen.addstr(i, 40, '|')
-        screen.addstr(i, 41, 'Throttle')
-        screen.addstr(i, 50, '|')
-        i = i + 1
-        screen.addstr(i, 00, '|target')
-        screen.addstr(i, 10, '|')
-        screen.addstr(i, 11, '%.3f' % myQ.rc.roll)
-        screen.addstr(i, 20, '|')
-        screen.addstr(i, 21, '%.3f' % myQ.rc.pitch)
-        screen.addstr(i, 30, '|')
-        screen.addstr(i, 31, '%.3f' % myQ.rc.yaw)
-        screen.addstr(i, 40, '|')
-        screen.addstr(i, 41, '%.3f' % myQ.rc.throttle)
-        screen.addstr(i, 50, '|')
-        i = i + 1
-        screen.addstr(i, 00, '|current')
-        screen.addstr(i, 10, '|')
-        screen.addstr(i, 11, '%.3f' % myQ.sensor.roll)
-        screen.addstr(i, 20, '|')
-        screen.addstr(i, 21, '%.3f' % myQ.sensor.pitch)
-        screen.addstr(i, 30, '|')
-        screen.addstr(i, 31, '%.3f' % myQ.sensor.yaw)
-        screen.addstr(i, 40, '|')
-        screen.addstr(i, 41, '%.3f' % myQ.rc.throttle)
-        screen.addstr(i, 50, '|')
-        i = i + 1
-        screen.addstr(i, 0, '|-------------------------------------------------|')
-
-        #if optione fai vedere...
-        #displayPIDTuning()
-
-#def displayPIDTuning():
-
-        i = 10
-        screen.addstr(i, 00, '|Command')
-        screen.addstr(i, 10, '|')
-        screen.addstr(i, 11, 'r kp')
-        screen.addstr(i, 20, '|')
-        screen.addstr(i, 21, '|rr kp')
-        screen.addstr(i, 30, '|')
-        screen.addstr(i, 31, 'rr ki')
-        screen.addstr(i, 40, '|')
-        screen.addstr(i, 41, 'rr kd')
-        screen.addstr(i, 50, '|')
-        i = i + 1
-        screen.addstr(i, 00, '|%.3f' % myQ.rc.command)
-        screen.addstr(i, 10, '|')
-        screen.addstr(i, 11, '%.3f' % myQ.pidR.kp)
-        screen.addstr(i, 20, '|')
-        screen.addstr(i, 21, '%.3f' % myQ.pidR_rate.kp)
-        screen.addstr(i, 30, '|')
-        screen.addstr(i, 31, '%.3f' % myQ.pidR_rate.ki)
-        screen.addstr(i, 40, '|')
-        screen.addstr(i, 41, '%.3f' % myQ.pidR_rate.kd)
-        screen.addstr(i, 50, '|')
-
-        i = i + 1
-        screen.addstr(i, 00, 'COMMAND > 0   NO PID control')
-        i = i + 1
-        screen.addstr(i, 00, 'COMMAND > 9   NO PID control - NO Motors')
-        i = i + 1
-        screen.addstr(i, 00, 'COMMAND > 1   PID control  roll')
-        i = i + 1
-        screen.addstr(i, 00, 'COMMAND >  2<R  RR: 3<P>4   5<I>6   7<D>8')
-        i = i + 1
-        screen.addstr(i, 00, 'z < ROLL > a     n < PITCH > m     f < THROTLE > t')
-        i = i + 1
-        screen.addstr(i, 00, 'SPACEBAR to KILL')
-
-
 ###############################################################################
 
 from quadcopter import quadcopter
 from logger_manager import setupLogger
-import curses
+#import curses
 import argparse
 from time import time, sleep, strftime
-
 
 cycleTime = 0.010  # [s]
 currentDate = strftime("%Y.%m.%d_%H.%M.%S")
 datalog = ''
-#update display every displaytime [s]
-displayCounter = 0
-
 
 #manage params
 parser = argparse.ArgumentParser()
@@ -240,8 +111,7 @@ calibIMU = args.calibIMU
 debuglev = args.debug
 netscanning = args.netscan
 
-#TODO metti netscan on di default
-#TODO add ip address as parameter or include it in a configuration file
+#TODO when tested , set  netscan on by default
 
 
 #init logger
@@ -249,13 +119,12 @@ logger = setupLogger('myQ', debuglev, 'myQ_log.txt')
 logger.info('myQ starting...Fasten your seat belt')
 
 
-screen = curses.initscr()
-myQ = quadcopter('qpi', screen, pin0=18, pin1=23, pin2=24, pin3=25, simulation=False)
+#screen = curses.initscr()
+myQ = quadcopter('qpi', pin0=18, pin1=23, pin2=24, pin3=25, simulation=False)
 #GPIO: 18 23 24 25
 #pin : 12 16 18 22
 
 myQ.load('myQ_cfg.txt')
-
 
 #Init sensor
 if calibIMU:
@@ -279,10 +148,6 @@ myQ.pidR_rate.set(0.070, 0.025, 0.010, maxCorr=15)
 myQ.pidP_rate.set(0.070, 0.025, 0.010, maxCorr=15)
 myQ.pidY_rate.set(0, 0, 0)
 
-#InitDisplay
-
-initDisplay()
-sleep(1)
 
 #init Log
 datalog = initLog()
@@ -314,6 +179,7 @@ pitch_rate_target = 0
 
 try:
 
+    #displayCommand()
     while myQ.rc.cycling:
 
         #manage cycletime
@@ -433,23 +299,11 @@ try:
         #myQ.motor[1].setW(myQ.rc.throttle - corrP)
         #myQ.motor[3].setW(myQ.rc.throttle + corrP)
 
-        displayTime = 0.2
-        displayCounter += 1
-        if displayCounter > displayTime / cycleTime:
-            displayCounter = 0
-        if displayCounter == 0:
-            showDisplay()
-
         if savelog is True:
             datalog += addLog()
 
 finally:
     # shut down cleanly
-    curses.nocbreak()
-    screen.keypad(0)
-    curses.echo()
-    curses.endwin()
-    #
     myQ.stop()
     try:
         if savelog:
