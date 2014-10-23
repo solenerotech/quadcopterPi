@@ -42,9 +42,6 @@ def mode_PID(myQ):
     corrY = 0
     roll_rate_target = 0
     pitch_rate_target = 0
-
-    myQ.rc.throttle = 0
-
     tuningRollRate = True
 
 
@@ -56,6 +53,7 @@ def mode_PID(myQ):
 
         if myQ.rc.command !=-1:
             myQ.rc.command = 0
+            myQ.rc.throttle = 0
 
         initTime = time()
         previousTime = initTime
@@ -121,21 +119,21 @@ def mode_PID(myQ):
 
             elif  myQ.rc.command == 5:
                 if tuningRollRate is True:
-                    myQ.pidR_rate.set(myQ.pidR_rate.kp  , myQ.pidR_rate.ki+ 0.001, myQ.pidR_rate.kd, maxCorr=15)
+                    myQ.pidR_rate.set(myQ.pidR_rate.kp, myQ.pidR_rate.ki + 0.001, myQ.pidR_rate.kd, maxCorr=15)
                 else:
-                    myQ.pidR.set(myQ.pidR.kp , myQ.pidR.ki+ 0.001, myQ.pidR.kd, maxCorr=15)
+                    myQ.pidR.set(myQ.pidR.kp, myQ.pidR.ki + 0.001, myQ.pidR.kd, maxCorr=15)
                 myQ.rc.command = 1
 
             elif  myQ.rc.command == 6:
                 if tuningRollRate is True:
-                    myQ.pidR_rate.set(myQ.pidR_rate.kp , myQ.pidR_rate.ki - 0.001, myQ.pidR_rate.kd, maxCorr=15)
+                    myQ.pidR_rate.set(myQ.pidR_rate.kp, myQ.pidR_rate.ki - 0.001, myQ.pidR_rate.kd, maxCorr=15)
                 else:
-                    myQ.pidR.set(myQ.pidR.kp  , myQ.pidR.ki - 0.001, myQ.pidR.kd, maxCorr=15)
+                    myQ.pidR.set(myQ.pidR.kp, myQ.pidR.ki - 0.001, myQ.pidR.kd, maxCorr=15)
                 myQ.rc.command = 1
 
             elif  myQ.rc.command == 7:
                 if tuningRollRate is True:
-                    myQ.pidR_rate.set(myQ.pidR_rate.kp  , myQ.pidR_rate.ki, myQ.pidR_rate.kd + 0.001, maxCorr=15)
+                    myQ.pidR_rate.set(myQ.pidR_rate.kp, myQ.pidR_rate.ki, myQ.pidR_rate.kd + 0.001, maxCorr=15)
                 else:
                     myQ.pidR.set(myQ.pidR.kp, myQ.pidR.ki, myQ.pidR.kd + 0.001, maxCorr=15)
                 myQ.rc.command = 1
@@ -144,9 +142,8 @@ def mode_PID(myQ):
                 if tuningRollRate is True:
                     myQ.pidR_rate.set(myQ.pidR_rate.kp, myQ.pidR_rate.ki, myQ.pidR_rate.kd - 0.001, maxCorr=15)
                 else:
-                    myQ.pidR.set(myQ.pidR.kp , myQ.pidR.ki, myQ.pidR.kd - 0.001, maxCorr=15)
+                    myQ.pidR.set(myQ.pidR.kp, myQ.pidR.ki, myQ.pidR.kd - 0.001, maxCorr=15)
                 myQ.rc.command = 1
-
 
             #TODO add yaw pid control here and throttle pid control
 
@@ -157,6 +154,7 @@ def mode_PID(myQ):
 
             #myQ.motor[1].setW(myQ.rc.throttle - corrP)
             #myQ.motor[3].setW(myQ.rc.throttle + corrP)
+
 
             if myQ.savelog is True:
                 datalog += addLog(myQ, currentTime - initTime)
@@ -169,7 +167,6 @@ def mode_PID(myQ):
                     data_file.flush()
         except IOError, err:
             logger.critical('Error %d, %s accessing file: %s', err.errno, err.strerror, 'myQ.csv')
-
 
 
 def initLog(myQ):

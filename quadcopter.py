@@ -144,7 +144,7 @@ class quadcopter(object):
         self.sensor.start()
         self.display.start()
         self.rc.start()
-        self.netscan.start()
+        #self.netscan.start() start from myQ according to the option
         #Init motors
         for i in xrange(4):
             self.motor[i].start()

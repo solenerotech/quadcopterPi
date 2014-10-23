@@ -48,12 +48,16 @@
 ###############################################################################
 
 
+#TODO  sposta il log direttamente nel Q
+
 from quadcopter import quadcopter
 from logger_manager import setupLogger
 #import curses
 import argparse
+from mode_ESC import mode_ESC
 from mode_PID import mode_PID
 from mode_UAV import mode_UAV
+from mode_Motor import mode_Motor
 from time import sleep
 
 try:
@@ -69,7 +73,6 @@ try:
     #init logger
     logger = setupLogger('myQ', args.debug, 'myQ_log.txt')
     logger.info('myQ starting...Fasten your seat belt')
-
 
     #screen = curses.initscr()
     myQ = quadcopter('qpi', pin0=18, pin1=23, pin2=24, pin3=25, simulation=False)
@@ -109,12 +112,11 @@ try:
         if myQ.rc.mode == myQ.rc.MODE_INIT:
             pass
         elif myQ.rc.mode == myQ.rc.MODE_ESC:
-            pass
+            mode_ESC(myQ)
         elif myQ.rc.mode == myQ.rc.MODE_MOTOR:
-            pass
+            mode_Motor(myQ)
         elif myQ.rc.mode == myQ.rc.MODE_PID_TUNING:
             mode_PID(myQ)
-
         elif myQ.rc.mode == myQ.rc.MODE_FLYING:
             pass
         elif myQ.rc.mode == myQ.rc.MODE_UAV:

@@ -142,25 +142,51 @@ class display(threading.Thread):
         self.screen.addstr(i, 79, '|')
 
     def displayMode_init(self):
-        i = 14
+        i = 13
         self.screen.addstr(i, 00, 'welcome')
         i = i + 1
         self.screen.addstr(i, 00, 'here add option to be managed')
 
     def displayMode_esc(self):
-        i = 14
-        self.screen.addstr(i, 00, 'esc initialization')
+        i = 13
+        self.screen.addstr(i, 00, 'Follow the next steps to initialize ESCs')
         i = i + 1
-        self.screen.addstr(i, 00, 'here add description of procedure and commands')
+        self.screen.addstr(i, 00, '1)FIX the Motors and remove the Props')
+        i = i + 1
+        self.screen.addstr(i, 00, '    2)Disconnect the ESC power cables')
+        i = i + 1
+        self.screen.addstr(i, 00, '        3)Connect motor to ESC - needed to generate beep')
+        i = i + 1
+        self.screen.addstr(i, 00, '4)PRESS 9 to ack the motor start')
+        i = i + 1
+        self.screen.addstr(i, 00, '    5)Select the ESC pressing 0|3')
+        i = i + 1
+        self.screen.addstr(i, 00, '        6)Press 5 to ack to init ESC - be carfull the throttle will be set to max')
+        i = i + 1
+        self.screen.addstr(i, 00, '7)Connect ESC power')
+        i = i + 1
+        self.screen.addstr(i, 00, '    8)Wait to ear beep-beep (then the ESC is correctly initializated)')
+        i = i + 1
+        self.screen.addstr(i, 00, '        9)Press 6 to complete procedure (throttle to 0')
+        i = i + 1
+        self.screen.addstr(i, 00, 'To init a new ESC you need to redo all the steps')
 
     def displayMode_motor(self):
-        i = 14
-        self.screen.addstr(i, 00, 'motor testing')
+        i = 13
+        self.screen.addstr(i, 00, 'FIRST : Press 9  to ack the motor start')
         i = i + 1
-        self.screen.addstr(i, 00, 'here add description of procedure and commands')
+        self.screen.addstr(i, 00, 'COMMAND > 0   Select M0 (default)')
+        i = i + 1
+        self.screen.addstr(i, 00, 'COMMAND > 1   Select M1')
+        i = i + 1
+        self.screen.addstr(i, 00, 'COMMAND > 2   Select M2')
+        i = i + 1
+        self.screen.addstr(i, 00, 'COMMAND > 4   Select M3')
+        i = i + 1
+        self.screen.addstr(i, 00, 'Use Throttle to modify motor speed')
 
     def displayMode_pid(self):
-        i = 14
+        i = 13
         self.screen.addstr(i, 00, 'FIRST : Press 9  to ack the motor start')
         i = i + 1
         self.screen.addstr(i, 00, 'COMMAND > 0   NO PID control')
@@ -174,16 +200,14 @@ class display(threading.Thread):
         self.screen.addstr(i, 00, 'COMMAND > 3<P>4   5<I>6   7<D>8')
 
     def displayMode_flying(self):
-        i = 14
+        i = 13
         self.screen.addstr(i, 00, 'flying mode ')
         i = i + 1
         self.screen.addstr(i, 00, 'here add description of procedure and commands')
 
     def displayMode_uav(self):
-        i = 14
+        i = 13
         self.screen.addstr(i, 00, 'FIRST : Press 9  to ack the motor start')
-        i = i + 1
-        self.screen.addstr(i, 00, 'uav mode')
         i = i + 1
         self.screen.addstr(i, 00, 'COMMAND > 0   NO PID control')
         i = i + 1
@@ -259,7 +283,7 @@ class display(threading.Thread):
         self.logger.debug('DISPLAY stopping...')
 
         self.cycling = False
-        sleep(self.refreshtime+0.1)
+        sleep(self.refreshtime + 0.1)
         self.screen.clear()
         self.screen.addstr(0, 0, '')
         self.screen.keypad(0)

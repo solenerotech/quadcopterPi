@@ -47,14 +47,13 @@ def mode_UAV(myQ):
 
     selectedPath = 0
 
-
     try:
 
         #wait ack from user to start motors
-        while myQ.rc.command != 9 and myQ.rc.command !=-1 and myQ.rc.cycling:
+        while myQ.rc.command != 9 and myQ.rc.command != -1 and myQ.rc.cycling:
             pass
 
-        if myQ.rc.command !=-1:
+        if myQ.rc.command != -1:
             myQ.rc.command = 0
 
         initTime = time()
@@ -62,7 +61,7 @@ def mode_UAV(myQ):
         currentTime = initTime
 
         #displayCommand()
-        while myQ.rc.cycling is True and  myQ.rc.command !=-1:
+        while myQ.rc.cycling is True and myQ.rc.command != -1:
 
             #manage cycletime
             while currentTime <= previousTime + cycleTime:
@@ -147,8 +146,7 @@ def mode_UAV(myQ):
                 if currentTime - pathTime > 18:
                     myQ.rc.roll = 0
 
-
-            if  selectedPath ==4:
+            if  selectedPath == 4:
                 #Test to have delta roll target in fiexd time
 
                 if currentTime - pathTime > 2 and currentTime - pathTime < 3:
@@ -176,7 +174,6 @@ def mode_UAV(myQ):
                 if currentTime - pathTime > 20:
                     myQ.rc.roll = 0
 
-
     finally:
         try:
             if myQ.savelog:
@@ -185,7 +182,6 @@ def mode_UAV(myQ):
                     data_file.flush()
         except IOError, err:
             logger.critical('Error %d, %s accessing file: %s', err.errno, err.strerror, 'myQ.csv')
-
 
 
 def initLog(myQ):
