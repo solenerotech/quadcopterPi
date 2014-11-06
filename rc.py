@@ -20,6 +20,8 @@
 #    solenero.tech@gmail.com
 #    solenerotech.wordpress.com
 ##############################################################################
+#2014.11.05 new button key according to the standard remote controllers
+
 
 import curses
 import threading
@@ -40,8 +42,8 @@ class rc(threading.Thread):
         self.throttleMax = 100
 
         self.roll = roll
-        self.rollMin = -25
-        self.rollMax = 25
+        self.rollMin = -5
+        self.rollMax = 5
 
         self.pitch = pitch
         self.pitchMin = -5
@@ -61,20 +63,15 @@ class rc(threading.Thread):
         self.MODE_FLYING = 4
         self.MODE_UAV = 5
 
-#TODO add  setup() function for setting the min/max values, instead of put all in the init()
-#TODO use self.Joystick  instead of angles , in order to have a variable behaviour
-
     def run(self):
 
         self.logger.debug('RC running...')
         while self.cycling:
 
-            #TODO add also command for pitch , yaw , and hover save and hover set
             #this is for not processing all the buffer,
             #but a command per cycle
             curses.flushinp()
             #timeout in millis
-            #TODO verify if this is necessary
             self.screen.timeout(100)
             #getch returns -1 if timeout
             res = self.screen.getch()
@@ -102,23 +99,26 @@ class rc(threading.Thread):
                 elif res == ord('9'):
                     self.command = 9
                 elif res == curses.KEY_RIGHT:
-                    self.mode =self.mode +1
+                    self.mode = self.mode + 1
                     self.command = -1
                 elif res == curses.KEY_LEFT:
-                    self.mode =self.mode -1
+                    self.mode = self.mode - 1
                     self.command = -1
-                elif res == ord('a'):
+                elif res == ord('j'):
                     self.roll = self.roll + 1
-                elif res == ord('z'):
+                elif res == ord('k'):
                     self.roll = self.roll - 1
-                elif res == ord('m'):
+                elif res == ord('i'):
                     self.pitch = self.pitch + 1
-                elif res == ord('n'):
+                elif res == ord('m'):
                     self.pitch = self.pitch - 1
-                #TODO add yaw
-                elif res == ord('t'):
+                elif res == ord('a'):
+                    self.yaw = self.yaw + 1
+                elif res == ord('s'):
+                    self.yaw = self.yaw - 1
+                elif res == ord('w'):
                     self.throttle = self.throttle + 1
-                elif res == ord('f'):
+                elif res == ord('z'):
                     self.throttle = self.throttle - 1
 
                 if self.mode < 0:

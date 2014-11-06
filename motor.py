@@ -154,8 +154,3 @@ class motor(object):
         if self.powered:
             #self.servo.set_servo(self.pin, PW)
             self.PWM.add_channel_pulse(1, self.pin, 0, PW)
-
-
-
-
-

@@ -22,7 +22,7 @@
 ##############################################################################
 
 #2014.10.20   finalize display
-#removed all the reference to screen  in th erest of the code
+#removed all the reference to screen  in the rest of the code
 
 import curses
 import threading
@@ -135,23 +135,37 @@ class display(threading.Thread):
         i = 7
         self.screen.addstr(i, 51, '----------------------------|')
         i = 8
-        self.screen.addstr(i, 0, '|SPACEBAR to KILL')
-        self.screen.addstr(i, 20, '|    z < Roll > a    ')
-        self.screen.addstr(i, 40, '|    m < Pitch > n')
-        self.screen.addstr(i, 60, '| f < Throttle > t')
+        self.screen.addstr(i, 00, '|    j < Roll > k    ')
+        self.screen.addstr(i, 20, '|    i < Pitch > m    ')
+        self.screen.addstr(i, 40, '|    a < yaw > s')
+        self.screen.addstr(i, 60, '| w < Throttle > z')
         self.screen.addstr(i, 79, '|')
+        i = 9
+        self.screen.addstr(i, 0, '|')
+        self.screen.addstr(i, 30, '|SPACEBAR to KILL|')
+        self.screen.addstr(i, 79, '|')
+        i = 10
+        self.screen.addstr(i, 0, '|------------------------------------------------------------------------------|')
 
     def displayMode_init(self):
         i = 13
-        self.screen.addstr(i, 00, 'welcome')
+        self.screen.addstr(i, 00, 'Welcome to myQPI ')
         i = i + 1
-        self.screen.addstr(i, 00, 'here add option to be managed')
+        self.screen.addstr(i, 00, 'use arrows to navigate along the modes.')
+        i = i + 1
+        self.screen.addstr(i, 00, '')
+        i = i + 1
+        self.screen.addstr(i, 00, 'Enjoy it , but first remember: ')
+        i = i + 1
+        self.screen.addstr(i, 00, '                              !!!SAFETY!!!')
+        i = i + 1
+        self.screen.addstr(i, 00, 'before start any activity verify to be in a safe condition')
 
     def displayMode_esc(self):
         i = 13
         self.screen.addstr(i, 00, 'Follow the next steps to initialize ESCs')
         i = i + 1
-        self.screen.addstr(i, 00, '1)FIX the Motors and remove the Props')
+        self.screen.addstr(i, 00, '1)FIX the Motor and remove the Props')
         i = i + 1
         self.screen.addstr(i, 00, '    2)Disconnect the ESC power cables')
         i = i + 1
@@ -201,9 +215,19 @@ class display(threading.Thread):
 
     def displayMode_flying(self):
         i = 13
-        self.screen.addstr(i, 00, 'flying mode ')
+        self.screen.addstr(i, 00, 'Flying Mode-NOT IMPLEMENTED YET')
+        i = 13
+        self.screen.addstr(i, 00, 'FIRST : Press 9  to ack the motor start')
         i = i + 1
-        self.screen.addstr(i, 00, 'here add description of procedure and commands')
+        self.screen.addstr(i, 00, 'COMMAND > 0   Netscan activation (to check continously the connection)')
+        i = i + 1
+        self.screen.addstr(i, 00, 'COMMAND > 1   Use PID value set 1')
+        i = i + 1
+        self.screen.addstr(i, 00, 'COMMAND > 2   Use PID value set 2')
+        i = i + 1
+        self.screen.addstr(i, 00, 'COMMAND > 3   Use PID value set 3')
+        i = i + 1
+        self.screen.addstr(i, 00, 'COMMAND > 4   NO PID Control')
 
     def displayMode_uav(self):
         i = 13
@@ -221,7 +245,6 @@ class display(threading.Thread):
 
     def displayModeQ(self):
         i = 11
-
         self.screen.addstr(i, 00, '|___INIT__')
         self.screen.addstr(i, 10, '|___ESC___')
         self.screen.addstr(i, 20, '|___Motor_')

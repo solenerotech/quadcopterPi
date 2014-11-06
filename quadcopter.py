@@ -31,7 +31,8 @@
 #2014.10.1 added netscan
 #2014.10.14 added load and save  function
 #2014.10.18 moved the screen directly inside quadcopter
-#TODO verificare perche l'imput adesso e' immediato e non attende piu un tot...
+#2014.10.28 added webserver
+
 
 import logging
 from pid import pid
@@ -41,6 +42,7 @@ from rc import rc
 from netscan import netscan
 from prop import prop
 from display import display
+from webserver import webserver
 
 
 class quadcopter(object):
@@ -76,6 +78,8 @@ class quadcopter(object):
 
         self.netscan = netscan(self.ip)
 
+        self.webserver = webserver(self)
+
         self.savelog = False
         self.calibIMU = False
         self.debuglev = 0
@@ -87,6 +91,9 @@ class quadcopter(object):
         self.mass = 2  # [Kg]
         self.barLenght = 0.23  # [mm]
         self.barMass = 0.15  # [kg]
+
+        self.datalog = ''
+        self.initLog()
 
     def load(self, file_name):
         try:
@@ -160,12 +167,43 @@ class quadcopter(object):
             self.motor[i].stop()
 
         self.netscan.stop()
+        self.webserver.stop()
         self.sensor.stop()
         self.rc.stop()
+        try:
+            if self.savelog:
+                with open('myQ.csv', 'w+') as data_file:
+                    data_file.write(self.datalog)
+                    data_file.flush()
+        except IOError, err:
+            self.logger.critical('Error %d, %s accessing file: %s', err.errno, err.strerror, 'myQ.csv')
 
-    def saveWh(self):
-        "set Wh all motors"
+    def initLog(self):
+        self.datalog = 'time;command;Rtarget;Roll;R rate;R rate gyro;throttle;rP;rI;rD;rrP;rrI;rrD;corr\n'
 
-        #TODO not used . Remove it
-        for i in xrange(4):
-            self.motor[i].saveWh()
+    def writeLog(self, time):
+        if self.savelog:
+            s1 = str(round(time, 3))
+            s1 += ';' + str(self.rc.command)
+            s1 += ';' + str(self.rc.roll)
+            s1 += ';' + str(self.sensor.roll)
+            s1 += ';' + str(self.sensor.roll_rate)
+            s1 += ';' + str(self.sensor.r_rate)
+            #s1 += ';'+ str(self.rc.pitch)
+            #s1 += ';'+str(self.sensor.pitch)
+            #s1 += ';'+ str(self.rc.yaw)
+            #s1 += ';'+str(self.sensor.yaw)
+            s1 += ';' + str(self.rc.throttle)
+            #s1 += ';'+str(myQ.motor[0].getW())
+            #s1 += ';'+str(myQ.motor[1].getW())
+            #s1 += ';'+str(myQ.motor[2].getW())
+            #s1 += ';'+str(myQ.motor[3].getW())
+            s1 += ';' + str(self.pidR.P)
+            s1 += ';' + str(self.pidR.I)
+            s1 += ';' + str(self.pidR.D)
+            s1 += ';' + str(self.pidR_rate.P)
+            s1 += ';' + str(self.pidR_rate.I)
+            s1 += ';' + str(self.pidR_rate.D)
+            s1 += ';' + str(self.pidR_rate.corr)
+            s1 += '\n'
+            self.datalog += s1

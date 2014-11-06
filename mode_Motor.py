@@ -27,6 +27,7 @@ from time import time, sleep
 import logging
 import sys
 
+
 def mode_Motor(myQ):
 
     logger = logging.getLogger('myQ.mode_Motor')
@@ -34,13 +35,12 @@ def mode_Motor(myQ):
 
     usedMotor = 0
 
-
     try:
 
         #wait ack from user to start motors
-        while myQ.rc.command != 9 and myQ.rc.command !=-1 and myQ.rc.cycling:
+        while myQ.rc.command != 9 and myQ.rc.command != -1 and myQ.rc.cycling:
             pass
-        if myQ.rc.command !=-1:
+        if myQ.rc.command != -1:
             myQ.rc.command = 0
             myQ.rc.throttle = 0
 
@@ -49,7 +49,7 @@ def mode_Motor(myQ):
         currentTime = initTime
 
         #displayCommand()
-        while myQ.rc.cycling is True and  myQ.rc.command !=-1:
+        while myQ.rc.cycling is True and myQ.rc.command != -1:
 
             #manage cycletime
             while currentTime <= previousTime + cycleTime:
@@ -73,13 +73,7 @@ def mode_Motor(myQ):
 
             myQ.motor[usedMotor].setW(myQ.rc.throttle)
 
+            myQ.writeLog(currentTime - initTime)
 
-    finally:
-
-        try:
-            if myQ.savelog:
-                with open('myQ.csv', 'w+') as data_file:
-                    data_file.write(datalog)
-                    data_file.flush()
-        except IOError, err:
-            logger.critical('Error %d, %s accessing file: %s', err.errno, err.strerror, 'myQ.csv')
+    except:
+        logger.critical('Unexpected error:', sys.exc_info()[0])

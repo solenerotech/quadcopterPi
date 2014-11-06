@@ -38,6 +38,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 
+
+#the content of this module has been included in myQ-mode_Motor.py
+
+
 import argparse
 from motor import motor
 from sensor import sensor

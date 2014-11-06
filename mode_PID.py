@@ -25,17 +25,14 @@
 
 from time import time, sleep
 import logging
+import sys
 
 
 def mode_PID(myQ):
 
-    logger = logging.getLogger('myQ.mode_UAV')
+    logger = logging.getLogger('myQ.mode_PID')
 
     cycleTime = 0.010  # [s]
-
-    #init Log
-    datalog = ''
-    datalog = initLog(myQ)
 
     corrR = 0
     corrP = 0
@@ -44,14 +41,13 @@ def mode_PID(myQ):
     pitch_rate_target = 0
     tuningRollRate = True
 
-
     try:
 
         #wait ack from user to start motors
-        while myQ.rc.command != 9 and myQ.rc.command !=-1 and myQ.rc.cycling:
+        while myQ.rc.command != 9 and myQ.rc.command != -1 and myQ.rc.cycling:
             pass
 
-        if myQ.rc.command !=-1:
+        if myQ.rc.command != -1:
             myQ.rc.command = 0
             myQ.rc.throttle = 0
 
@@ -60,7 +56,7 @@ def mode_PID(myQ):
         currentTime = initTime
 
         #displayCommand()
-        while myQ.rc.cycling is True and  myQ.rc.command !=-1:
+        while myQ.rc.cycling is True and myQ.rc.command != -1:
 
             #manage cycletime
             while currentTime <= previousTime + cycleTime:
@@ -155,57 +151,7 @@ def mode_PID(myQ):
             #myQ.motor[1].setW(myQ.rc.throttle - corrP)
             #myQ.motor[3].setW(myQ.rc.throttle + corrP)
 
+            myQ.writeLog(currentTime - initTime)
 
-            if myQ.savelog is True:
-                datalog += addLog(myQ, currentTime - initTime)
-
-    finally:
-        try:
-            if myQ.savelog:
-                with open('myQ.csv', 'w+') as data_file:
-                    data_file.write(datalog)
-                    data_file.flush()
-        except IOError, err:
-            logger.critical('Error %d, %s accessing file: %s', err.errno, err.strerror, 'myQ.csv')
-
-
-def initLog(myQ):
-
-    datalog = 'P ' + str(myQ.pidR.kp)
-    datalog += ';I ' + str(myQ.pidR.ki)
-    datalog += ';D ' + str(myQ.pidR.kd)
-    datalog = ';rr P ' + str(myQ.pidR.kp)
-    datalog += ';rr I ' + str(myQ.pidR.ki)
-    datalog += ';rr D ' + str(myQ.pidR.kd)
-    datalog += '\n'
-    datalog += 'time;command;Rtarget;Roll;R rate;R rate gyro;throttle;rP;rI;rD;rrP;rrI;rrD;corr\n'
-
-    return datalog
-
-
-def addLog(self, myQ, deltatime):
-    #s1 =str(time())
-    s1 = str(round(deltatime, 3))
-    s1 += ';' + str(myQ.rc.command)
-    s1 += ';' + str(myQ.rc.roll)
-    s1 += ';' + str(myQ.sensor.roll)
-    s1 += ';' + str(myQ.sensor.roll_rate)
-    s1 += ';' + str(myQ.sensor.r_rate)
-    #s1 += ';'+ str(myQ.rc.pitch)
-    #s1 += ';'+str(myQ.sensor.pitch)
-    #s1 += ';'+ str(myQ.rc.yaw)
-    #s1 += ';'+str(myQ.sensor.yaw)
-    s1 += ';' + str(myQ.rc.throttle)
-    #s1 += ';'+str(myQ.motor[0].getW())
-    #s1 += ';'+str(myQ.motor[1].getW())
-    #s1 += ';'+str(myQ.motor[2].getW())
-    #s1 += ';'+str(myQ.motor[3].getW())
-    s1 += ';' + str(myQ.pidR.P)
-    s1 += ';' + str(myQ.pidR.I)
-    s1 += ';' + str(myQ.pidR.D)
-    s1 += ';' + str(myQ.pidR_rate.P)
-    s1 += ';' + str(myQ.pidR_rate.I)
-    s1 += ';' + str(myQ.pidR_rate.D)
-    s1 += ';' + str(myQ.pidR_rate.corr)
-    s1 += '\n'
-    return s1
+    except:
+        logger.critical('Unexpected error:', sys.exc_info()[0])

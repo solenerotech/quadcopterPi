@@ -21,9 +21,6 @@
 #    solenerotech.wordpress.com
 ##############################################################################
 
-# beta1:
-#TARGET: 1)take off...
-#2014.04.27
 
 #2014.05.22 code is ready for test.
 #at startup all motors starts at 5%
@@ -41,18 +38,26 @@
 #beta 3
 #added netscan in quadcopter to verify the connection with remote control (device with fixed ip)
 
+
 # myQ Release candidate
 #2014.10.20
-#
+#create the modes (a collection of the previous functionalities present in the xyz_test.py
+#create a module for each mode
+
+#2014.11.04  added the webserver to remote control the myQ  using any devices (smarthphone, tablet)
+#the current webpage it is really an example page with no all the functionalities
 
 ###############################################################################
 
+#TODO Create a fling mode where the orientation is mantained and on mode where the orientation is manages
+#as a pulse (get roll inclination than set it back to zero
 
-#TODO  sposta il log direttamente nel Q
+#TODO consider to create a tack time  in mtQ than can sync all the threads.Do first performance test...
+#time() is time consuming. better to have only one call on it. still better could be to use a PWM output to trig the
+#tack time
 
 from quadcopter import quadcopter
 from logger_manager import setupLogger
-#import curses
 import argparse
 from mode_ESC import mode_ESC
 from mode_PID import mode_PID
@@ -64,14 +69,17 @@ try:
 
     #manage params
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d', dest='debug', action='store_true', help='set debug leveland save in : myQ_log.txt ')
-    parser.add_argument('-s', dest='savelog', action='store_true', help='save log: myQ.csv ')
+    parser.add_argument('-d', dest='debug', action='store_true', help='save debug log: myQ.log ')
+    parser.add_argument('-s', dest='savelog', action='store_true', help='save data log: myQ.csv ')
     parser.add_argument('-c', dest='calibIMU', action='store_true', help='Calibrate IMU')
     parser.add_argument('-n', dest='netscan', action='store_true', help='Check network connection')
+    parser.add_argument('-w', dest='webserver', action='store_true', help='Start webserver|http//:192.68.0.10/myQ.html')
     args = parser.parse_args()
 
+#TODO move this options in mode_init
+
     #init logger
-    logger = setupLogger('myQ', args.debug, 'myQ_log.txt')
+    logger = setupLogger('myQ', args.debug, 'myQ.log')
     logger.info('myQ starting...Fasten your seat belt')
 
     #screen = curses.initscr()
@@ -82,9 +90,10 @@ try:
     myQ.savelog = args.savelog
     myQ.calibIMU = args.calibIMU
     myQ.debuglev = args.debug
-    myQ.netscanning = args.netscan  # TODO when fully tested , set  netscan on, by default
+    myQ.netscanOn = args.netscan  # TODO when fully tested , set  netscan on, by default
+    myQ.webserverOn = args.webserver
 
-    myQ.load('myQ_cfg.txt')
+    myQ.load('myQ.cfg')
 
     #Init sensor
     if myQ.calibIMU:
@@ -92,14 +101,16 @@ try:
 
     myQ.start()
 
-    if myQ.netscanning is True:
+    if myQ.netscanOn is True:
         myQ.netscan.start()
     else:
         myQ.netscan.stop()
         myQ.netscan.connectionUp = True
 
+    if myQ.webserverOn is True:
+        myQ.webserver.start()
+
     #Init PIDs
-    #meglio per ora : 0,035 0 0      0,08 0,05 0
     myQ.pidR.set(0.045, 0, 0, maxCorr=15)
     myQ.pidP.set(0.045, 0, 0, maxCorr=15)
     myQ.pidY.set(0, 0, 0)
@@ -135,9 +146,4 @@ try:
 finally:
     # shut down cleanly
     myQ.stop()
-
-logger.info('Thank you for joining us on this trip !')
-logger.info('We are looking forward to seeing you on board again in the near future!')
-logger.info('myQ stopped.')
-
-
+    logger.info('Thank you for joining us on this trip ! myQ stopped.')

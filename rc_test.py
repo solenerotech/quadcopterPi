@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from rc import rc
-from time import  sleep
+from time import sleep
 import curses
 #in win non riesco a gestire lo screen.. ci vuole istallato Konsole???
 
@@ -13,16 +13,15 @@ curses.cbreak()
 # map arrow keys to special values
 screen.keypad(True)
 
-myRc=rc(screen)
+myRc = rc(screen)
 myRc.start()
-
 
 while myRc.cycling:
 
     screen.clear()
-    screen.addstr(1, 1,'Roll +a  -z  |  Throttle +k  -m  |  SPACEBAR to quit ')
-    screen.addstr(2, 1,'ROLL: ' + str(myRc.roll))
-    screen.addstr(3, 1,'THROTTLE: ' + str(myRc.throttle))
+    screen.addstr(1, 1, 'Roll +a  -z  |  Throttle +k  -m  |  SPACEBAR to quit ')
+    screen.addstr(2, 1, 'ROLL: ' + str(myRc.roll))
+    screen.addstr(3, 1, 'THROTTLE: ' + str(myRc.throttle))
     sleep(0.05)
 
 curses.nocbreak()

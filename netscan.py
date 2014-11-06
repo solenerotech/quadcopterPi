@@ -49,14 +49,14 @@ class netscan(threading.Thread):
 
         self.logger.debug('netscan running...')
         while self.cycling:
-            p = Popen("ping -w " +str(self.timeout) +" "+ self.ip,stderr=STDOUT, stdout=PIPE)
+            p = Popen("ping -w " + str(self.timeout) + " " + self.ip, stderr=STDOUT, stdout=PIPE)
             p.communicate()
-            if  p.returncode== 0:
+            if  p.returncode == 0:
                 #self.logger.debug('OK')
                 self.connectionUp = True
             else:
                 self.connectionUp = False
-                self.logger.debug('NOK-------------'+ str(p.returncode))
+                self.logger.debug('NOK-------------' + str(p.returncode))
             sleep(0.300)
         p.terminate()
 

@@ -23,6 +23,7 @@
 
 import logging
 
+
 class prop(object):
     """return prop informations:
         self.diameter [inch]
@@ -37,4 +38,3 @@ class prop(object):
         self.pitch = pitch
         self.kt = kt
         self.kp = self.kt * self.pitch * pow(self.diameter, 3) * pow(10, -10) * 0.0283
-

@@ -30,6 +30,7 @@ import logging
 #2014.08.2
 #added angle rate calculation
 
+
 class sensor(threading.Thread):
     """Manages the Inertial Measurament Unit (IMU)
     returns the current roll,pitch,yaw values
@@ -66,9 +67,6 @@ class sensor(threading.Thread):
         self.roll = 0
         self.pitch = 0
         self.yaw = 0
-        self.roll_rate = 0
-        self.pitch_rate = 0
-        self.yaw_rate = 0
         #those values are directly fro IMU
         self.x_acc = 0
         self.y_acc = 0
@@ -99,21 +97,17 @@ class sensor(threading.Thread):
 
     def run(self):
         #this function is called by the start function, inherit from threading.thread
-        self.datalog = ''
-        self.datalog = '|time'
-        self.datalog += '|roll|pitch|yaw'
-        self.datalog += '|roll_rate|pitch_rate|yaw_rate'
-        self.datalog += '|r_rate|p_rate|y_rate'
-        self.datalog += '|x_acc|y_acc|z_acc'
+        self.datalog = 'time'
+        self.datalog += ';roll;pitch;yaw'
+        self.datalog += ';r_rate;p_rate;y_rate'
+        self.datalog += ';x_acc;y_acc;z_acc'
         self.datalog += '\n'
 
         currentTime = time()
 
         self.logger.debug('IMU running...')
         while self.cycling:
-
-
-
+            #cycling as fast as possible
             previousTime = currentTime
             currentTime = time()
             stepTime = currentTime - previousTime
@@ -121,14 +115,7 @@ class sensor(threading.Thread):
             self.update(stepTime)
 
             if self.savelog is True:
-                self.datalog += self.getDataString(currentTime)
-
-            #comment this for cycling as fast as possible
-            #while currentTime < PreviousTime + self.cycleTime:
-                #currentTime = time()
-                #sleep(0.001)
-            #sleep(0.001)
-
+                self.datalog += self.getDataString(stepTime)
 
     def stop(self):
         try:
@@ -136,7 +123,7 @@ class sensor(threading.Thread):
             self.cycling = False
             if self.savelog is True:
                 sleep(0.1)
-                with open('sensor_data.txt', 'w+') as data_file:
+                with open('myQ_sensor.csv', 'w+') as data_file:
                     data_file.write(self.datalog)
                     data_file.flush()
 
@@ -148,15 +135,13 @@ class sensor(threading.Thread):
             self.x_acc, self.y_acc, self.z_acc, self.r_rate, self.p_rate, self.y_rate = self.IMU.readSensors()
             self.getAngleCompl(dt)
 
-
-    def getDataString(self, data1=''):
+    def getDataString(self, dt):
         "return all the data as string , usefull for logging"
 
-        s = '|' + str(data1)
-        s += '|' + str(self.roll) + '|' + str(self.pitch) + '|' + str(self.yaw)
-        s += '|' + str(self.roll_rate) + '|' + str(self.pitch_rate) + '|' + str(self.yaw_rate)
-        s += '|' + str(self.r_rate) + '|' + str(self.p_rate) + '|' + str(self.y_rate)
-        s += '|' + str(self.x_acc) + '|' + str(self.y_acc) + '|' + str(self.z_acc)
+        s = str(dt)
+        s += ';' + str(self.roll) + ';' + str(self.pitch) + ';' + str(self.yaw)
+        s += ';' + str(self.r_rate) + ';' + str(self.p_rate) + ';' + str(self.y_rate)
+        s += ';' + str(self.x_acc) + ';' + str(self.y_acc) + ';' + str(self.z_acc)
         s += '\n'
         return s
 
@@ -168,7 +153,7 @@ class sensor(threading.Thread):
         return new_r, new_p, new_y
 
     def getAngleAcc(self):
-        "return the angle calculated on the accelerometer."
+        "return the angle calculated on the accelerometer.not used"
         pi = 3.141592
         #ATTENTION atan2(y,x) while in excel is atan2(x,y)
         r = math.atan2(self.y_acc, self.z_acc) * 180 / pi
@@ -180,11 +165,6 @@ class sensor(threading.Thread):
 
     def getAngleCompl(self, dt):
         "return the angle calculated applying the complementary filter."
-
-        #TODO -remove this, not used anymore
-        previousRoll = self.roll
-        previousPitch = self.pitch
-        previousYaw = self.yaw
 
         tau = 0.1
         #tau is the time constant in sec
@@ -199,9 +179,3 @@ class sensor(threading.Thread):
         # gyro data, so a=1 for yaw.(it means that yaw value is affected by drift)
         a = 1
         self.yaw = round(a * (self.yaw + self.y_rate * dt) + (1 - a) * new_y, 3)
-
-        #TODO -remove this, not used anymore
-        self.roll_rate = (self.roll - previousRoll) / dt
-        self.pitch_rate = (self.pitch - previousPitch) / dt
-        self.yaw_rate = (self.yaw - previousYaw) / dt
-

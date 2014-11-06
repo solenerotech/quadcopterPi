@@ -56,4 +56,3 @@ def setupLogger(name, debuglevel, file_name):
         streamhandler.setLevel(logging.INFO)
 
     return logger
-

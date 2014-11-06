@@ -25,6 +25,7 @@
 
 from time import time, sleep
 import logging
+import sys
 
 
 def mode_ESC(myQ):
@@ -32,7 +33,6 @@ def mode_ESC(myQ):
     logger = logging.getLogger('myQ.mode_ESC')
 
     cycleTime = 0.010  # [s]
-
 
     try:
 
@@ -56,7 +56,6 @@ def mode_ESC(myQ):
                 sleep(0.001)
             previousTime = currentTime
 
-
             # user commands:
             if myQ.rc.command == 0 and usedMotor != 0:
                 usedMotor = 0
@@ -79,11 +78,5 @@ def mode_ESC(myQ):
                 myQ.motor[usedMotor].setW(0)
                 myQ.rc.command = -1
 
-    finally:
-        try:
-            if myQ.savelog:
-                with open('myQ.csv', 'w+') as data_file:
-                    data_file.write(datalog)
-                    data_file.flush()
-        except IOError, err:
-            logger.critical('Error %d, %s accessing file: %s', err.errno, err.strerror, 'myQ.csv')
+    except:
+        logger.critical('Unexpected error:', sys.exc_info()[0])
