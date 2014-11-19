@@ -62,9 +62,10 @@ class quadcopter(object):
         self.motor[2] = motor('M2', pin2, kv=1000, WMin=0, WMax=100, simulation=self.simulation)
         self.motor[3] = motor('M3', pin3, kv=1000, WMin=0, WMax=100, simulation=self.simulation)
 
-        self.sensor = sensor()
+        #TODO gestire in myQ...
+        self.sensor = sensor(savelog=True,simulation=False)
 
-        self.display = display(self)
+        self.display = display(self, refreshtime=1)
 
         self.rc = rc(self.display.screen)
 
@@ -74,7 +75,7 @@ class quadcopter(object):
         self.pidR_rate = pid()
         self.pidP_rate = pid()
         self.pidY_rate = pid()
-        self.ip = '192.168.0.3'
+        self.ip = '192.168.1.1'
 
         self.netscan = netscan(self.ip)
 

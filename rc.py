@@ -66,13 +66,13 @@ class rc(threading.Thread):
     def run(self):
 
         self.logger.debug('RC running...')
+        #timeout in millis
+        self.screen.timeout(100)
         while self.cycling:
 
             #this is for not processing all the buffer,
             #but a command per cycle
             curses.flushinp()
-            #timeout in millis
-            self.screen.timeout(100)
             #getch returns -1 if timeout
             res = self.screen.getch()
             if res == 32:  # 32 =SPACEBAR

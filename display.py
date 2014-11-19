@@ -111,9 +111,11 @@ class display(threading.Thread):
         self.screen.addstr(i, 51, '----------------------------|')
         i = 1
         self.screen.addstr(i, 51, 'Mode: %d' % self.myQ.rc.mode)
+        self.screen.addstr(i, 65, '|Temp: %.1f' % self.myQ.sensor.temp)
         self.screen.addstr(i, 79, '|')
         i = 2
         self.screen.addstr(i, 51, 'Command: %d' % self.myQ.rc.command)
+        self.screen.addstr(i, 65, '|')
         self.screen.addstr(i, 79, '|')
         i = 3
         self.screen.addstr(i, 51, '----------------------------|')

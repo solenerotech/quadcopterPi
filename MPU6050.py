@@ -25,13 +25,17 @@
 
 #solenerotech 2013.07.31
 
+#2014.11.19 review and correct the calibration offset
+#calculate the accelerometer angle correction
+
+
 from __future__ import division
 import math
 from array import *
 import smbus
 import time
 import logging
-
+import sys
 
 ############################################################################################
 #
@@ -40,11 +44,14 @@ import logging
 ############################################################################################
 class I2C:
 
-    def __init__(self, address, bus=smbus.SMBus(1)):
+    def __init__(self, address):
 
         self.logger = logging.getLogger('myQ.I2C')
         self.address = address
-        self.bus = bus
+        try:
+            self.bus = smbus.SMBus(1)
+        except:
+            self.logger.critical('Error smbu')
 
     def reverseByteOrder(self, data):
         "Reverses the byte order of an int (16-bit) or long (32-bit) value"
@@ -277,259 +284,259 @@ class MPU6050:
     __MPU6050_RA_FIFO_R_W = 0x74
     __MPU6050_RA_WHO_AM_I = 0x75
 
-    __CALIBRATION_ITERATIONS = 100
-    __k_norm = 0.0
-
     def CheckSetting(self):
         if self.i2c.readU8(self.__MPU6050_RA_SMPLRT_DIV)is not 0x04:
             self.logger.error('IMU Error: __MPU6050_RA_SMPLRT_DIV Failed:' + str(self.i2c.readU8(self.__MPU6050_RA_SMPLRT_DIV)))
-            time.sleep(2)
+            time.sleep(0.1)
 
         if self.i2c.readU8(self.__MPU6050_RA_PWR_MGMT_1)is not 0x03:
             self.logger.error('IMU Error: __MPU6050_RA_PWR_MGMT_1  Failed: ' + str(self.i2c.readU8(self.__MPU6050_RA_PWR_MGMT_1)))
-            time.sleep(2)
+            time.sleep(0.1)
 
         if self.i2c.readU8(self.__MPU6050_RA_CONFIG)is not 0x05:
             self.logger.error('IMU Error: __MPU6050_RA_CONFIG  Failed: ' + str(self.i2c.readU8(self.__MPU6050_RA_CONFIG)))
-            time.sleep(2)
+            time.sleep(0.1)
 
         if self.i2c.readU8(self.__MPU6050_RA_GYRO_CONFIG)is not 0x00:
             self.logger.error('IMU Error: __MPU6050_RA_GYRO_CONFIG Failed: ' + str(self.i2c.readU8(self.__MPU6050_RA_GYRO_CONFIG)))
-            time.sleep(2)
+            time.sleep(0.1)
 
     def __init__(self, address=0x68):
 
         self.logger = logging.getLogger('myQ.MPU6050')
 
         self.logger.debug('IMU initializing...')
-        self.i2c = I2C(address)
-        self.address = address
-        self.ax_offset = 0
-        self.ay_offset = 0
-        self.az_offset = 0
-        self.gx_offset = 0
-        self.gy_offset = 0
-        self.gz_offset = 0
-        self.sensor_data = array('B', [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-        self.result_array = array('h', [0, 0, 0, 0, 0, 0, 0])
-        ###logger = logging.get##logger(__name__)
-        ##logger.info('Reseting MPU-6050')
+        try:
+            self.i2c = I2C(address)
+            self.address = address
 
-        #---------------------------------------------------------------------------
-        # Reset all registers
-        #---------------------------------------------------------------------------
-        ##logger.debug('Reset all registers')
-        #SNT note: corrected the param
-        self.i2c.write8(self.__MPU6050_RA_PWR_MGMT_1,0x80)
-        #self.i2c.write8(self.__MPU6050_RA_CONFIG, 0x80)
-        time.sleep(5)
+            self.cal_iteration = 100
 
-        #---------------------------------------------------------------------------
-        # ********************************: Experimental :**************************
+            self.roll_a_cal = 0
+            self.pitch_a_cal = 0
+            self.yaw_a_cal = 0
+            self.roll_g_cal = 0
+            self.pitch_g_cal = 0
+            self.yaw_g_cal = 0
+            self.sensor_data = array('B', [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+            self.result_array = array('h', [0, 0, 0, 0, 0, 0, 0])
+            ###logger = logging.get##logger(__name__)
+            ##logger.info('Reseting MPU-6050')
 
+            #---------------------------------------------------------------------------
+            # Reset all registers
+            #---------------------------------------------------------------------------
+            ##logger.debug('Reset all registers')
+            #SNT note: corrected the param
+            self.i2c.write8(self.__MPU6050_RA_PWR_MGMT_1,0x80)
+            #self.i2c.write8(self.__MPU6050_RA_CONFIG, 0x80)
+            time.sleep(5)
 
-        #---------------------------------------------------------------------------
-        # Sets clock source to gyro reference w/ PLL
-        #---------------------------------------------------------------------------
-        ##logger.debug('Clock gyro PLL con x reference')
-        #SNT: 0x02 >> 0x03 (pll con z gyro reference)
-        self.i2c.write8(self.__MPU6050_RA_PWR_MGMT_1, 0x03)
-        time.sleep(0.005)
+            #---------------------------------------------------------------------------
+            # ********************************: Experimental :**************************
 
 
-        # Sets sample rate to 1000/1+4 = 200Hz
-        #---------------------------------------------------------------------------
-        ##logger.debug('Sample rate 100Hz')
-        self.i2c.write8(self.__MPU6050_RA_SMPLRT_DIV, 0x04)
-        time.sleep(0.005)
-
-        #SoleNeroTech note: moved up this part of the code to solve a bug in MPU6050:
-        #CONFIG has to be set just after PWR_MGMT_1
-        #---------------------------------------------------------------------------
-        # ********************************: Experimental :**************************
-        # Disable FSync, 5Hz DLPF => 1kHz sample frequency used above divided by the
-        # sample divide factor.
-        #---------------------------------------------------------------------------
-        ##logger.debug('5Hz DLPF')
-        # 0x02 => 98Hz  2ms delay
-        # 0x03 => 40Hz  4
-        # 0x04 => 20Hz  8
-        # 0x05 => 10Hz  15
-        self.i2c.write8(self.__MPU6050_RA_CONFIG, 0x05)
-        time.sleep(0.005)
-
-        #print(str(self.i2c.readU8(self.__MPU6050_RA_CONFIG)))
-
-        #---------------------------------------------------------------------------
-        # ********************************: Experimental :**************************
-        # Disable gyro self tests, scale of +/- 500 degrees/s
-        #---------------------------------------------------------------------------
-        #0x00=+/-250 0x08=+/- 500    0x10=+/-1000 0x18=+/-2000
-        #logger.debug('Gyro +/-500 degrees/s')
-        #SoleNeroTech  modified in 0x00
-        self.i2c.write8(self.__MPU6050_RA_GYRO_CONFIG, 0x00)
-        self.gyro_scale=250
-        time.sleep(0.005)
-
-        #---------------------------------------------------------------------------
-        # ********************************: Experimental :**************************
-        # Disable accel self tests, scale of +/-2g
-        #---------------------------------------------------------------------------
-        #0x00=+/-2 0x08=+/- 4    0x10=+/-8 0x18=+/-16
-        #logger.debug('Accel +/- 2g')
-        self.i2c.write8(self.__MPU6050_RA_ACCEL_CONFIG, 0x00)
-        self.accel_scale=2
-        time.sleep(0.005)
-
-        #--------------------------------------------------------------------------
-        # Disables FIFO, AUX I2C, FIFO and I2C reset bits to 0
-        #---------------------------------------------------------------------------
-        self.i2c.write8(self.__MPU6050_RA_USER_CTRL, 0x00)
-        time.sleep(0.005)
-
-        #---------------------------------------------------------------------------
-        # Setup INT pin to latch and AUX I2C pass through
-        #---------------------------------------------------------------------------
-        ##logger.debug('Enable interrupt')
-        #SNT 0x20>0x02
-        self.i2c.write8(self.__MPU6050_RA_INT_PIN_CFG, 0x02)
-        time.sleep(0.005)
-
-        #---------------------------------------------------------------------------
-        # Controls frequency of wakeups in accel low power mode plus the sensor standby modes
-        #---------------------------------------------------------------------------
-        ##logger.debug('Disable low-power')
-        self.i2c.write8(self.__MPU6050_RA_PWR_MGMT_2, 0x00)
-        time.sleep(0.005)
-
-        #---------------------------------------------------------------------------
-        # ********************************: Experimental :**************************
-        # Enable data ready interrupt
-        #---------------------------------------------------------------------------
-        ##logger.debug('Interrupt data ready')
-        self.i2c.write8(self.__MPU6050_RA_INT_ENABLE, 0x01)
-        time.sleep(0.005)
-
-        ##logger.debug('Gumph hereafter...')
-
-        #---------------------------------------------------------------------------
-        # Freefall threshold of |0mg|
-        #---------------------------------------------------------------------------
-        self.i2c.write8(self.__MPU6050_RA_FF_THR, 0x00)
-        time.sleep(0.005)
-
-        #---------------------------------------------------------------------------
-        # Freefall duration limit of 0
-        #---------------------------------------------------------------------------
-        self.i2c.write8(self.__MPU6050_RA_FF_DUR, 0x00)
-        time.sleep(0.005)
-
-        #---------------------------------------------------------------------------
-        # Motion threshold of 0mg
-        #---------------------------------------------------------------------------
-        self.i2c.write8(self.__MPU6050_RA_MOT_THR, 0x00)
-        time.sleep(0.005)
-
-        #---------------------------------------------------------------------------
-        # Motion duration of 0s
-        #---------------------------------------------------------------------------
-        self.i2c.write8(self.__MPU6050_RA_MOT_DUR, 0x00)
-        time.sleep(0.005)
-
-        #---------------------------------------------------------------------------
-        # Zero motion threshold
-        #---------------------------------------------------------------------------
-        self.i2c.write8(self.__MPU6050_RA_ZRMOT_THR, 0x00)
-        time.sleep(0.005)
-
-        #---------------------------------------------------------------------------
-        # Zero motion duration threshold
-        #---------------------------------------------------------------------------
-        self.i2c.write8(self.__MPU6050_RA_ZRMOT_DUR, 0x00)
-        time.sleep(0.005)
-
-        #---------------------------------------------------------------------------
-        # Disable sensor output to FIFO buffer
-        #---------------------------------------------------------------------------
-        self.i2c.write8(self.__MPU6050_RA_FIFO_EN, 0x00)
-        time.sleep(0.005)
-
-        #---------------------------------------------------------------------------
-        # AUX I2C setup
-        # Sets AUX I2C to single master control, plus other config
-        #---------------------------------------------------------------------------
-        self.i2c.write8(self.__MPU6050_RA_I2C_MST_CTRL, 0x00)
-        time.sleep(0.005)
-
-        #---------------------------------------------------------------------------
-        # Setup AUX I2C slaves
-        #---------------------------------------------------------------------------
-        self.i2c.write8(self.__MPU6050_RA_I2C_SLV0_ADDR, 0x00)
-        self.i2c.write8(self.__MPU6050_RA_I2C_SLV0_REG, 0x00)
-        self.i2c.write8(self.__MPU6050_RA_I2C_SLV0_CTRL, 0x00)
-        self.i2c.write8(self.__MPU6050_RA_I2C_SLV1_ADDR, 0x00)
-        self.i2c.write8(self.__MPU6050_RA_I2C_SLV1_REG, 0x00)
-        self.i2c.write8(self.__MPU6050_RA_I2C_SLV1_CTRL, 0x00)
-        self.i2c.write8(self.__MPU6050_RA_I2C_SLV2_ADDR, 0x00)
-        self.i2c.write8(self.__MPU6050_RA_I2C_SLV2_REG, 0x00)
-        self.i2c.write8(self.__MPU6050_RA_I2C_SLV2_CTRL, 0x00)
-        self.i2c.write8(self.__MPU6050_RA_I2C_SLV3_ADDR, 0x00)
-        self.i2c.write8(self.__MPU6050_RA_I2C_SLV3_REG, 0x00)
-        self.i2c.write8(self.__MPU6050_RA_I2C_SLV3_CTRL, 0x00)
-        self.i2c.write8(self.__MPU6050_RA_I2C_SLV4_ADDR, 0x00)
-        self.i2c.write8(self.__MPU6050_RA_I2C_SLV4_REG, 0x00)
-        self.i2c.write8(self.__MPU6050_RA_I2C_SLV4_DO, 0x00)
-        self.i2c.write8(self.__MPU6050_RA_I2C_SLV4_CTRL, 0x00)
-        self.i2c.write8(self.__MPU6050_RA_I2C_SLV4_DI, 0x00)
-
-        #---------------------------------------------------------------------------
-        # Slave out, dont care
-        #---------------------------------------------------------------------------
-        self.i2c.write8(self.__MPU6050_RA_I2C_SLV0_DO, 0x00)
-        self.i2c.write8(self.__MPU6050_RA_I2C_SLV1_DO, 0x00)
-        self.i2c.write8(self.__MPU6050_RA_I2C_SLV2_DO, 0x00)
-        self.i2c.write8(self.__MPU6050_RA_I2C_SLV3_DO, 0x00)
-
-        #---------------------------------------------------------------------------
-        # More slave config
-        #---------------------------------------------------------------------------
-        self.i2c.write8(self.__MPU6050_RA_I2C_MST_DELAY_CTRL, 0x00)
-        time.sleep(0.005)
-
-        #---------------------------------------------------------------------------
-        # Reset sensor signal paths
-        #---------------------------------------------------------------------------
-        self.i2c.write8(self.__MPU6050_RA_SIGNAL_PATH_RESET, 0x00)
-        time.sleep(0.005)
-
-        #---------------------------------------------------------------------------
-        # Motion detection control
-        #---------------------------------------------------------------------------
-        self.i2c.write8(self.__MPU6050_RA_MOT_DETECT_CTRL, 0x00)
-        time.sleep(0.005)
+            #---------------------------------------------------------------------------
+            # Sets clock source to gyro reference w/ PLL
+            #---------------------------------------------------------------------------
+            ##logger.debug('Clock gyro PLL con x reference')
+            #SNT: 0x02 >> 0x03 (pll con z gyro reference)
+            self.i2c.write8(self.__MPU6050_RA_PWR_MGMT_1, 0x03)
+            time.sleep(0.005)
 
 
+            # Sets sample rate to 1000/1+4 = 200Hz
+            #---------------------------------------------------------------------------
+            ##logger.debug('Sample rate 100Hz')
+            self.i2c.write8(self.__MPU6050_RA_SMPLRT_DIV, 0x04)
+            time.sleep(0.005)
 
-        #---------------------------------------------------------------------------
-        # Data transfer to and from the FIFO buffer
-        #---------------------------------------------------------------------------
-        self.i2c.write8(self.__MPU6050_RA_FIFO_R_W, 0x00)
-        time.sleep(0.005)
+            #SoleNeroTech note: moved up this part of the code to solve a bug in MPU6050:
+            #CONFIG has to be set just after PWR_MGMT_1
+            #---------------------------------------------------------------------------
+            # ********************************: Experimental :**************************
+            # Disable FSync, 5Hz DLPF => 1kHz sample frequency used above divided by the
+            # sample divide factor.
+            #---------------------------------------------------------------------------
+            ##logger.debug('5Hz DLPF')
+            # 0x02 => 98Hz  2ms delay
+            # 0x03 => 40Hz  4
+            # 0x04 => 20Hz  8
+            # 0x05 => 10Hz  15
+            self.i2c.write8(self.__MPU6050_RA_CONFIG, 0x05)
+            time.sleep(0.005)
 
+            #print(str(self.i2c.readU8(self.__MPU6050_RA_CONFIG)))
 
-        self.CheckSetting()
+            #---------------------------------------------------------------------------
+            # ********************************: Experimental :**************************
+            # Disable gyro self tests, scale of +/- 500 degrees/s
+            #---------------------------------------------------------------------------
+            #0x00=+/-250 0x08=+/- 500    0x10=+/-1000 0x18=+/-2000
+            #logger.debug('Gyro +/-500 degrees/s')
+            #SoleNeroTech  modified in 0x00
+            self.i2c.write8(self.__MPU6050_RA_GYRO_CONFIG, 0x00)
+            self.gyro_scale=250
+            time.sleep(0.005)
+
+            #---------------------------------------------------------------------------
+            # ********************************: Experimental :**************************
+            # Disable accel self tests, scale of +/-2g
+            #---------------------------------------------------------------------------
+            #0x00=+/-2 0x08=+/- 4    0x10=+/-8 0x18=+/-16
+            #logger.debug('Accel +/- 2g')
+            self.i2c.write8(self.__MPU6050_RA_ACCEL_CONFIG, 0x00)
+            self.accel_scale=2
+            time.sleep(0.005)
+
+            #--------------------------------------------------------------------------
+            # Disables FIFO, AUX I2C, FIFO and I2C reset bits to 0
+            #---------------------------------------------------------------------------
+            self.i2c.write8(self.__MPU6050_RA_USER_CTRL, 0x00)
+            time.sleep(0.005)
+
+            #---------------------------------------------------------------------------
+            # Setup INT pin to latch and AUX I2C pass through
+            #---------------------------------------------------------------------------
+            ##logger.debug('Enable interrupt')
+            #SNT 0x20>0x02
+            self.i2c.write8(self.__MPU6050_RA_INT_PIN_CFG, 0x02)
+            time.sleep(0.005)
+
+            #---------------------------------------------------------------------------
+            # Controls frequency of wakeups in accel low power mode plus the sensor standby modes
+            #---------------------------------------------------------------------------
+            ##logger.debug('Disable low-power')
+            self.i2c.write8(self.__MPU6050_RA_PWR_MGMT_2, 0x00)
+            time.sleep(0.005)
+
+            #---------------------------------------------------------------------------
+            # ********************************: Experimental :**************************
+            # Enable data ready interrupt
+            #---------------------------------------------------------------------------
+            ##logger.debug('Interrupt data ready')
+            self.i2c.write8(self.__MPU6050_RA_INT_ENABLE, 0x01)
+            time.sleep(0.005)
+
+            ##logger.debug('Gumph hereafter...')
+
+            #---------------------------------------------------------------------------
+            # Freefall threshold of |0mg|
+            #---------------------------------------------------------------------------
+            self.i2c.write8(self.__MPU6050_RA_FF_THR, 0x00)
+            time.sleep(0.005)
+
+            #---------------------------------------------------------------------------
+            # Freefall duration limit of 0
+            #---------------------------------------------------------------------------
+            self.i2c.write8(self.__MPU6050_RA_FF_DUR, 0x00)
+            time.sleep(0.005)
+
+            #---------------------------------------------------------------------------
+            # Motion threshold of 0mg
+            #---------------------------------------------------------------------------
+            self.i2c.write8(self.__MPU6050_RA_MOT_THR, 0x00)
+            time.sleep(0.005)
+
+            #---------------------------------------------------------------------------
+            # Motion duration of 0s
+            #---------------------------------------------------------------------------
+            self.i2c.write8(self.__MPU6050_RA_MOT_DUR, 0x00)
+            time.sleep(0.005)
+
+            #---------------------------------------------------------------------------
+            # Zero motion threshold
+            #---------------------------------------------------------------------------
+            self.i2c.write8(self.__MPU6050_RA_ZRMOT_THR, 0x00)
+            time.sleep(0.005)
+
+            #---------------------------------------------------------------------------
+            # Zero motion duration threshold
+            #---------------------------------------------------------------------------
+            self.i2c.write8(self.__MPU6050_RA_ZRMOT_DUR, 0x00)
+            time.sleep(0.005)
+
+            #---------------------------------------------------------------------------
+            # Disable sensor output to FIFO buffer
+            #---------------------------------------------------------------------------
+            self.i2c.write8(self.__MPU6050_RA_FIFO_EN, 0x00)
+            time.sleep(0.005)
+
+            #---------------------------------------------------------------------------
+            # AUX I2C setup
+            # Sets AUX I2C to single master control, plus other config
+            #---------------------------------------------------------------------------
+            self.i2c.write8(self.__MPU6050_RA_I2C_MST_CTRL, 0x00)
+            time.sleep(0.005)
+
+            #---------------------------------------------------------------------------
+            # Setup AUX I2C slaves
+            #---------------------------------------------------------------------------
+            self.i2c.write8(self.__MPU6050_RA_I2C_SLV0_ADDR, 0x00)
+            self.i2c.write8(self.__MPU6050_RA_I2C_SLV0_REG, 0x00)
+            self.i2c.write8(self.__MPU6050_RA_I2C_SLV0_CTRL, 0x00)
+            self.i2c.write8(self.__MPU6050_RA_I2C_SLV1_ADDR, 0x00)
+            self.i2c.write8(self.__MPU6050_RA_I2C_SLV1_REG, 0x00)
+            self.i2c.write8(self.__MPU6050_RA_I2C_SLV1_CTRL, 0x00)
+            self.i2c.write8(self.__MPU6050_RA_I2C_SLV2_ADDR, 0x00)
+            self.i2c.write8(self.__MPU6050_RA_I2C_SLV2_REG, 0x00)
+            self.i2c.write8(self.__MPU6050_RA_I2C_SLV2_CTRL, 0x00)
+            self.i2c.write8(self.__MPU6050_RA_I2C_SLV3_ADDR, 0x00)
+            self.i2c.write8(self.__MPU6050_RA_I2C_SLV3_REG, 0x00)
+            self.i2c.write8(self.__MPU6050_RA_I2C_SLV3_CTRL, 0x00)
+            self.i2c.write8(self.__MPU6050_RA_I2C_SLV4_ADDR, 0x00)
+            self.i2c.write8(self.__MPU6050_RA_I2C_SLV4_REG, 0x00)
+            self.i2c.write8(self.__MPU6050_RA_I2C_SLV4_DO, 0x00)
+            self.i2c.write8(self.__MPU6050_RA_I2C_SLV4_CTRL, 0x00)
+            self.i2c.write8(self.__MPU6050_RA_I2C_SLV4_DI, 0x00)
+
+            #---------------------------------------------------------------------------
+            # Slave out, dont care
+            #---------------------------------------------------------------------------
+            self.i2c.write8(self.__MPU6050_RA_I2C_SLV0_DO, 0x00)
+            self.i2c.write8(self.__MPU6050_RA_I2C_SLV1_DO, 0x00)
+            self.i2c.write8(self.__MPU6050_RA_I2C_SLV2_DO, 0x00)
+            self.i2c.write8(self.__MPU6050_RA_I2C_SLV3_DO, 0x00)
+
+            #---------------------------------------------------------------------------
+            # More slave config
+            #---------------------------------------------------------------------------
+            self.i2c.write8(self.__MPU6050_RA_I2C_MST_DELAY_CTRL, 0x00)
+            time.sleep(0.005)
+
+            #---------------------------------------------------------------------------
+            # Reset sensor signal paths
+            #---------------------------------------------------------------------------
+            self.i2c.write8(self.__MPU6050_RA_SIGNAL_PATH_RESET, 0x00)
+            time.sleep(0.005)
+
+            #---------------------------------------------------------------------------
+            # Motion detection control
+            #---------------------------------------------------------------------------
+            self.i2c.write8(self.__MPU6050_RA_MOT_DETECT_CTRL, 0x00)
+            time.sleep(0.005)
+
+            #---------------------------------------------------------------------------
+            # Data transfer to and from the FIFO buffer
+            #---------------------------------------------------------------------------
+            self.i2c.write8(self.__MPU6050_RA_FIFO_R_W, 0x00)
+            time.sleep(0.005)
+
+            self.CheckSetting()
+        except:
+            logger.critical('Unexpected error:', sys.exc_info()[0])
 
     def readSensorsRaw(self):
         #---------------------------------------------------------------------------
         # Clear the interrupt by reading the interrupt status register,
         #---------------------------------------------------------------------------
-        self.i2c.readU8(self.__MPU6050_RA_INT_STATUS)
-        time.sleep(0.001)
+        #self.i2c.readU8(self.__MPU6050_RA_INT_STATUS)
+        #time.sleep(0.001)
         #---------------------------------------------------------------------------
         # Hard loop on the data ready interrupt until it gets set high
         #---------------------------------------------------------------------------
         while not (self.i2c.readU8(self.__MPU6050_RA_INT_STATUS) == 0x01):
-            time.sleep(0.001)
+            time.sleep(0.0001)
             continue
 
         #---------------------------------------------------------------------------
@@ -569,179 +576,84 @@ class MPU6050:
     def readSensors(self):
         #---------------------------------------------------------------------------
         # +/- 2g 2 * 16 bit range for the accelerometer
-        # +/- 500 degrees * 16 bit range for the gyroscope
+        # +/- 250 degrees * 16 bit range for the gyroscope
         #---------------------------------------------------------------------------
-        [ax, ay, az, temp, gx, gy, gz] = self.readSensorsRaw()
-        fax = float(ax / self.__k_norm)
-        fay = float(ay / self.__k_norm)
-        faz = float(az / self.__k_norm)
 
-        fgx = float(gx * self.__CALIBRATION_ITERATIONS - self.gx_offset) * (2*self.gyro_scale) / float(65536 * self.__CALIBRATION_ITERATIONS)
-        fgy = float(gy * self.__CALIBRATION_ITERATIONS - self.gy_offset) * (2*self.gyro_scale) / float(65536 * self.__CALIBRATION_ITERATIONS)
-        fgz = float(gz * self.__CALIBRATION_ITERATIONS - self.gz_offset) * (2*self.gyro_scale) / float(65536 * self.__CALIBRATION_ITERATIONS)
-        return fax, fay, faz, fgx, fgy, fgz
+        scale_g = (2 * self.gyro_scale) / 65536
+        #2*  is given because range is -/+ ; gyroscale=250
 
-    def readSensors_ORIGINAL(self):
-        #---------------------------------------------------------------------------
-        # +/- 2g 2 * 16 bit range for the accelerometer
-        # +/- 500 degrees * 16 bit range for the gyroscope
-        #---------------------------------------------------------------------------
         [ax, ay, az, temp, gx, gy, gz] = self.readSensorsRaw()
-        fax = float(ax * self.__CALIBRATION_ITERATIONS - self.ax_offset) * (2*self.accel_scale) / float(65536 * self.__CALIBRATION_ITERATIONS)
-        fay = float(ay * self.__CALIBRATION_ITERATIONS - self.ay_offset) * (2*self.accel_scale) / float(65536 * self.__CALIBRATION_ITERATIONS)
-        faz = float(az * self.__CALIBRATION_ITERATIONS - self.az_offset) * (2*self.accel_scale) / float(65536 * self.__CALIBRATION_ITERATIONS)
-        fgx = float(gx * self.__CALIBRATION_ITERATIONS - self.gx_offset) * (2*self.gyro_scale) / float(65536 * self.__CALIBRATION_ITERATIONS)
-        fgy = float(gy * self.__CALIBRATION_ITERATIONS - self.gy_offset) * (2*self.gyro_scale) / float(65536 * self.__CALIBRATION_ITERATIONS)
-        fgz = float(gz * self.__CALIBRATION_ITERATIONS - self.gz_offset) * (2*self.gyro_scale) / float(65536 * self.__CALIBRATION_ITERATIONS)
-        return fax, fay, faz, fgx, fgy, fgz
+
+        fax = float(ax)
+        fay = float(ay)
+        faz = float(az)
+
+        fgx = float(gx - self.roll_g_cal) * scale_g
+        fgy = float(gy - self.pitch_g_cal) * scale_g
+        fgz = float(gz - self.yaw_g_cal) * scale_g
+
+        temp = (float(temp) / 340) + 36.53
+        return fax, fay, faz, fgx, fgy, fgz, temp
 
     def updateOffsets(self, file_name):
-        g=9.8 #m/s^2
-        ax_offset = 0
-        ay_offset = 0
-        az_offset = 0
-        gx_offset = 0
-        gy_offset = 0
-        gz_offset = 0
 
-        for loop_count in range(0, self.__CALIBRATION_ITERATIONS):
+        x_a_cal = 0
+        y_a_cal = 0
+        z_a_cal = 0
+        roll_g_cal = 0
+        pitch_g_cal = 0
+        yaw_g_cal = 0
+
+        for loop_count in range(0, self.cal_iteration):
             [ax, ay, az, temp, gx, gy, gz] = self.readSensorsRaw()
-            ax_offset += ax
-            ay_offset += ay
-            az_offset += az
-            gx_offset += gx
-            gy_offset += gy
-            gz_offset += gz
+            x_a_cal += ax
+            y_a_cal += ay
+            z_a_cal += az
+            roll_g_cal += gx
+            pitch_g_cal += gy
+            yaw_g_cal += gz
 
             time.sleep(0.05)
 
-        self.ax_offset = ax_offset / self.__CALIBRATION_ITERATIONS
-        self.ay_offset = ay_offset / self.__CALIBRATION_ITERATIONS
-        self.az_offset = az_offset / self.__CALIBRATION_ITERATIONS
+        #ATTENTION atan2(y,x) while in excel is atan2(x,y)
+        self.roll_a_cal = round(math.atan2(y_a_cal, z_a_cal) * 180 / math.pi, 3)
+        self.pitch_a_cal = round(math.atan2(x_a_cal, z_a_cal) * 180 / math.pi, 3)
+        #Note that yaw value is not calculable using acc info
+        self.yaw_a_cal = 0
 
-        self.__k_norm = math.pow((self.ax_offset), 2) + math.pow((self.ay_offset), 2) + math.pow((self.az_offset), 2)
-        self.__k_norm = self.__k_norm / math.pow((g), 2)
-        self.__k_norm = float(math.pow((self.__k_norm), 0.5))
-        self.gx_offset = gx_offset
-        self.gy_offset = gy_offset
-        self.gz_offset = gz_offset
-        #print 'k write:' + str(self.__k_norm)
+        self.roll_g_cal = roll_g_cal / self.cal_iteration
+        self.pitch_g_cal = pitch_g_cal / self.cal_iteration
+        self.yaw_g_cal = yaw_g_cal / self.cal_iteration
 
         #---------------------------------------------------------------------------
         # Open the offset config file
         #---------------------------------------------------------------------------
-        cfg_rc = True
         try:
             with open(file_name, 'w+') as cfg_file:
-                cfg_file.write('%d\n' % self.ax_offset)
-                cfg_file.write('%d\n' % self.ay_offset)
-                cfg_file.write('%d\n' % self.az_offset)
-                cfg_file.write('%d\n' % gx_offset)
-                cfg_file.write('%d\n' % gy_offset)
-                cfg_file.write('%d\n' % gz_offset)
-                cfg_file.write('%f\n' % self.__k_norm)
+                cfg_file.write('%f\n' % self.roll_a_cal)
+                cfg_file.write('%f\n' % self.pitch_a_cal)
+                cfg_file.write('%f\n' % self.yaw_a_cal)
+                cfg_file.write('%d\n' % self.roll_g_cal)
+                cfg_file.write('%d\n' % self.pitch_g_cal)
+                cfg_file.write('%d\n' % self.yaw_g_cal)
                 cfg_file.flush()
 
         except IOError, err:
             self.logger.critical('Error %d, %s accessing file: %s', err.errno, err.strerror, file_name)
-            cfg_rc = False
-
-        return cfg_rc
-
-    def updateOffsets_ORIGINAL(self, file_name):
-        ax_offset = 0
-        ay_offset = 0
-        az_offset = 0
-        gx_offset = 0
-        gy_offset = 0
-        gz_offset = 0
-
-        for loop_count in range(0, self.__CALIBRATION_ITERATIONS):
-            [ax, ay, az, temp, gx, gy, gz] = self.readSensorsRaw()
-            ax_offset += ax
-            ay_offset += ay
-            az_offset += az
-            gx_offset += gx
-            gy_offset += gy
-            gz_offset += gz
-
-            time.sleep(0.05)
-
-        self.ax_offset = ax_offset
-        self.ay_offset = ay_offset
-        self.az_offset = az_offset
-
-        self.gx_offset = gx_offset
-        self.gy_offset = gy_offset
-        self.gz_offset = gz_offset
-
-        #---------------------------------------------------------------------------
-        # Open the offset config file
-        #---------------------------------------------------------------------------
-        cfg_rc = True
-        try:
-            with open(file_name, 'w+') as cfg_file:
-                cfg_file.write('%d\n' % ax_offset)
-                cfg_file.write('%d\n' % ay_offset)
-                cfg_file.write('%d\n' % az_offset)
-                cfg_file.write('%d\n' % gx_offset)
-                cfg_file.write('%d\n' % gy_offset)
-                cfg_file.write('%d\n' % gz_offset)
-                cfg_file.flush()
-
-        except IOError, err:
-            self.logger.critical('Error %d, %s accessing file: %s', err.errno, err.strerror, file_name)
-            cfg_rc = False
-
-        return cfg_rc
 
     def readOffsets(self, file_name):
         #---------------------------------------------------------------------------
         # Open the Offsets config file, and read the contents
         #---------------------------------------------------------------------------
-        cfg_rc = True
         try:
             with open(file_name, 'r') as cfg_file:
-                str_ax_offset = cfg_file.readline()
-                str_ay_offset = cfg_file.readline()
-                str_az_offset = cfg_file.readline()
-                str_gx_offset = cfg_file.readline()
-                str_gy_offset = cfg_file.readline()
-                str_gz_offset = cfg_file.readline()
-                str_k_norm = cfg_file.readline()
+                self.roll_a_cal = float(cfg_file.readline())
+                self.pitch_a_cal = float(cfg_file.readline())
+                self.yaw_a_cal = float(cfg_file.readline())
+                self.roll_g_cal = int(cfg_file.readline())
+                self.pitch_g_cal = int(cfg_file.readline())
+                self.yaw_g_cal = int(cfg_file.readline())
+                cfg_file.flush()
 
-            self.ax_offset = int(str_ax_offset)
-            self.ay_offset = int(str_ay_offset)
-            self.az_offset = int(str_az_offset)
-            self.gx_offset = int(str_gx_offset)
-            self.gy_offset = int(str_gy_offset)
-            self.gz_offset = int(str_gz_offset)
-            self.__k_norm = float(str_k_norm)
-
-            #print 'k read: ' + str(self.__k_norm)
         except IOError, err:
             self.logger.critical('Error %d, %s accessing file: %s', err.errno, err.strerror, file_name)
-            cfg_rc = False
-
-        return cfg_rc
-
-    def getEulerAngles(self, fax, fay, faz):
-        #---------------------------------------------------------------------------
-        # What's the angle in the x and y plane from horizonal?
-        #---------------------------------------------------------------------------
-
-        roll = math.atan2(fax, math.pow(math.pow(fay, 2) + math.pow(faz, 2), 0.5))
-        pitch = math.atan2(fay, math.pow(math.pow(fax, 2) + math.pow(faz, 2), 0.5))
-        yaw = math.atan2(math.pow(math.pow(fax, 2) + math.pow(fay, 2), 0.5), faz)
-
-        roll *= (180 / math.pi)
-        pitch *= (180 / math.pi)
-        yaw *= (180 / math.pi)
-
-        return roll, pitch, yaw
-
-    def readTemp(self):
-        temp = self.i2c.readS16(self.__MPU6050_RA_TEMP_OUT_H)
-        temp = (float(temp) / 340) + 36.53
-        ##logger.debug('temp = %s oC', temp)
-        return temp

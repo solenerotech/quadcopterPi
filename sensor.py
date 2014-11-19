@@ -26,10 +26,13 @@ import math
 from time import time, sleep
 import threading
 import logging
+import sys
 
 #2014.08.2
 #added angle rate calculation
 
+
+#TODO move IMU.cfg data in myQ.cfg data
 
 class sensor(threading.Thread):
     """Manages the Inertial Measurament Unit (IMU)
@@ -57,7 +60,7 @@ class sensor(threading.Thread):
         self.cycletime = cycletime
         self.savelog = savelog
         if self.savelog is True:
-            self.logger.debug('Savelog is TRUE: it can affect the cycle time.')
+            self.logger.debug('Saving in myQ_sensor.csv')
         self.simulation = simulation
 
         self.datalog = ''
@@ -67,6 +70,15 @@ class sensor(threading.Thread):
         self.roll = 0
         self.pitch = 0
         self.yaw = 0
+
+        self.roll_g = 0
+        self.pitch_g = 0
+        self.yaw_g = 0
+
+        self.roll_a = 0
+        self.pitch_a = 0
+        self.yaw_a = 0
+
         #those values are directly fro IMU
         self.x_acc = 0
         self.y_acc = 0
@@ -74,6 +86,7 @@ class sensor(threading.Thread):
         self.r_rate = 0
         self.p_rate = 0
         self.y_rate = 0
+        self.temp = 0
 
         try:
             #here just check that library is available
@@ -83,17 +96,19 @@ class sensor(threading.Thread):
             if self.simulation is False:
                 from MPU6050 import MPU6050
                 self.IMU = MPU6050(address)
-                self.IMU.readOffsets('IMU_offset.txt')
+                self.IMU.readOffsets('IMU.cfg')
             self.logger.debug('IMU initiazized...')
         except ImportError, strerror:
             self.simulation = True
             self.logger.error('Error: IMU NOT initiazized. %s', strerror)
+        #except:
+            #self.logger.critical('Unexpected error:', sys.exc_info()[0])
 
     def calibrate(self):
         if self.simulation is False:
             self.logger.debug('IMU calibrating...')
-            self.IMU.updateOffsets('IMU_offset.txt')
-            self.IMU.readOffsets('IMU_offset.txt')
+            self.IMU.updateOffsets('IMU.cfg')
+            self.IMU.readOffsets('IMU.cfg')
 
     def run(self):
         #this function is called by the start function, inherit from threading.thread
@@ -104,7 +119,7 @@ class sensor(threading.Thread):
         self.datalog += '\n'
 
         currentTime = time()
-
+        counter = 0
         self.logger.debug('IMU running...')
         while self.cycling:
             #cycling as fast as possible
@@ -115,7 +130,12 @@ class sensor(threading.Thread):
             self.update(stepTime)
 
             if self.savelog is True:
-                self.datalog += self.getDataString(stepTime)
+                self.datalog += self.getDataString(stepTime, level=1)
+
+            #used for performance test only
+            #counter += 1
+            #if counter == 500 or counter == 1000:
+                #self.logger.debug('1000 cycles')
 
     def stop(self):
         try:
@@ -132,36 +152,41 @@ class sensor(threading.Thread):
 
     def update(self, dt):
         if self.simulation is False:
-            self.x_acc, self.y_acc, self.z_acc, self.r_rate, self.p_rate, self.y_rate = self.IMU.readSensors()
+            self.x_acc, self.y_acc, self.z_acc, self.r_rate, self.p_rate, self.y_rate, self.temp = self.IMU.readSensors()
             self.getAngleCompl(dt)
 
-    def getDataString(self, dt):
+    def getDataString(self, dt, level=2):
         "return all the data as string , usefull for logging"
 
-        s = str(dt)
-        s += ';' + str(self.roll) + ';' + str(self.pitch) + ';' + str(self.yaw)
-        s += ';' + str(self.r_rate) + ';' + str(self.p_rate) + ';' + str(self.y_rate)
-        s += ';' + str(self.x_acc) + ';' + str(self.y_acc) + ';' + str(self.z_acc)
+        s = str(dt) + ';'
+        if level == 1:
+            s += '\n'
+            return s
+        s += str(self.roll) + ';' + str(self.pitch) + ';' + str(self.yaw) + ';'
+        if level == 2:
+            s += '\n'
+            return s
+        s += str(self.r_rate) + ';' + str(self.p_rate) + ';' + str(self.y_rate) + ';'
+        s += str(self.x_acc) + ';' + str(self.y_acc) + ';' + str(self.z_acc)
         s += '\n'
         return s
 
     def getAngleGyro(self, dt):
-        "return the angle calculated on the gyro.not used"
-        new_r = self.roll + self.r_rate * dt
-        new_p = self.pitch + self.p_rate * dt
-        new_y = self.yaw + self.y_rate * dt
-        return new_r, new_p, new_y
+        "return the angle calculated on the gyro"
+        self.roll_g = round(self.roll + self.r_rate * dt, 3)
+        self.pitch_g = round(self.pitch + self.p_rate * dt, 3)
+        self.yaw_g = round(self.yaw + self.y_rate * dt, 3)
 
     def getAngleAcc(self):
-        "return the angle calculated on the accelerometer.not used"
-        pi = 3.141592
+        "return the angle calculated on the accelerometer."
         #ATTENTION atan2(y,x) while in excel is atan2(x,y)
-        r = math.atan2(self.y_acc, self.z_acc) * 180 / pi
-        p = math.atan2(self.x_acc, self.z_acc) * 180 / pi
+        self.roll_a = round(math.atan2(self.y_acc, self.z_acc) * 180 / math.pi, 3) - self.IMU.roll_a_cal
+        # sign minus to inverte the rference system
+        self.pitch_a = -(round(math.atan2(self.x_acc, self.z_acc) * 180 / math.pi, 3) - self.IMU.pitch_a_cal)
         #Note that yaw value is not calculable using acc info
         #function returns y value just for keep a consistent structure
-        y = 0
-        return r, p, y
+        self.yaw_a = 0
+        #self.logger.error('%f %f',a,self.IMU.acc_calib_r)
 
     def getAngleCompl(self, dt):
         "return the angle calculated applying the complementary filter."
@@ -171,11 +196,12 @@ class sensor(threading.Thread):
         #for time periods < tau the  gyro takes precedence
         #for time periods > tau the acc takes precedence
 
-        new_r, new_p, new_y = self.getAngleAcc()
+        self.getAngleAcc()
+        self.getAngleGyro(dt)
         a = tau / (tau + dt)
-        self.roll = round(a * (self.roll + self.r_rate * dt) + (1 - a) * new_r, 3)
-        self.pitch = round(a * (self.pitch + self.p_rate * dt) + (1 - a) * new_p, 3)
+        self.roll = round(a * (self.roll_g) + (1 - a) * self.roll_a, 3)
+        self.pitch = round(a * (self.pitch_g) + (1 - a) * self.pitch_a, 3)
         #note the yaw angle can be calculated only using the
         # gyro data, so a=1 for yaw.(it means that yaw value is affected by drift)
         a = 1
-        self.yaw = round(a * (self.yaw + self.y_rate * dt) + (1 - a) * new_y, 3)
+        self.yaw = round(a * (self.yaw_g) + (1 - a) * self.yaw_a, 3)

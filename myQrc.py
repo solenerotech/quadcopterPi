@@ -102,7 +102,7 @@ try:
     myQ.start()
 
     if myQ.netscanOn is True:
-        myQ.netscan.start()
+        myQ.netscan.start(myQ.ip)
     else:
         myQ.netscan.stop()
         myQ.netscan.connectionUp = True
