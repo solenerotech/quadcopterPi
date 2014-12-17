@@ -21,7 +21,4 @@
 #    solenerotech.wordpress.com
 ##############################################################################
 
-from netscan import netscan
 
-myN= netscan()
-myN.scanAll()

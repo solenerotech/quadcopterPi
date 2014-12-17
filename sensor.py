@@ -26,7 +26,6 @@ import math
 from time import time, sleep
 import threading
 import logging
-import sys
 
 #2014.08.2
 #added angle rate calculation
@@ -48,19 +47,16 @@ class sensor(threading.Thread):
         self.p_rate
         self.y_rate
 
-    if savelog=True, writes log: sensor_data.txt
         """
 
-    def __init__(self, address=0x68, cycletime=0.01, savelog=False, simulation=True):
+    def __init__(self, address=0x68, cycletime=0.01, imulog=False, simulation=True):
 
         threading.Thread.__init__(self)
         self.logger = logging.getLogger('myQ.sensor')
 
         self.address = address
         self.cycletime = cycletime
-        self.savelog = savelog
-        if self.savelog is True:
-            self.logger.debug('Saving in myQ_sensor.csv')
+        self.imulog = imulog
         self.simulation = simulation
 
         self.datalog = ''
@@ -118,8 +114,9 @@ class sensor(threading.Thread):
         self.datalog += ';x_acc;y_acc;z_acc'
         self.datalog += '\n'
 
-        currentTime = time()
-        counter = 0
+        initTime = time()
+        currentTime = initTime
+        counterPerf = 0  # for performance test
         self.logger.debug('IMU running...')
         while self.cycling:
             #cycling as fast as possible
@@ -129,19 +126,24 @@ class sensor(threading.Thread):
 
             self.update(stepTime)
 
-            if self.savelog is True:
-                self.datalog += self.getDataString(stepTime, level=1)
+            if self.imulog is True:
+                self.datalog += self.getDataString(stepTime, level=0)
 
             #used for performance test only
-            #counter += 1
-            #if counter == 500 or counter == 1000:
-                #self.logger.debug('1000 cycles')
+            doPerf = False
+            if doPerf is True:
+                counterPerf += 1
+                if  counterPerf == 1000:
+                    self.logger.info('1000 cycles time:' + str(currentTime - initTime))
+                    doPerf = False
+
+        self.logger.debug('IMU stopped')
 
     def stop(self):
         try:
             self.logger.debug('IMU stopping...')
             self.cycling = False
-            if self.savelog is True:
+            if self.imulog is True:
                 sleep(0.1)
                 with open('myQ_sensor.csv', 'w+') as data_file:
                     data_file.write(self.datalog)
@@ -155,15 +157,15 @@ class sensor(threading.Thread):
             self.x_acc, self.y_acc, self.z_acc, self.r_rate, self.p_rate, self.y_rate, self.temp = self.IMU.readSensors()
             self.getAngleCompl(dt)
 
-    def getDataString(self, dt, level=2):
+    def getDataString(self, dt, level=1):
         "return all the data as string , usefull for logging"
 
         s = str(dt) + ';'
-        if level == 1:
+        if level == 0:
             s += '\n'
             return s
         s += str(self.roll) + ';' + str(self.pitch) + ';' + str(self.yaw) + ';'
-        if level == 2:
+        if level == 1:
             s += '\n'
             return s
         s += str(self.r_rate) + ';' + str(self.p_rate) + ';' + str(self.y_rate) + ';'

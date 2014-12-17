@@ -48,13 +48,13 @@ def mode_Motor(myQ):
         previousTime = initTime
         currentTime = initTime
 
+        counterPerf = 0  # used for performance tests
         #displayCommand()
-        while myQ.rc.cycling is True and myQ.rc.command != -1:
-
+        while myQ.rc.cycling is True and myQ.rc.command != -1 and myQ.netscan.connectionUp is True:
             #manage cycletime
-            while currentTime <= previousTime + cycleTime:
+            while currentTime <= (previousTime + cycleTime):
                 currentTime = time()
-                sleep(0.001)
+                sleep(0.0001)
             previousTime = currentTime
 
             # user commands:
@@ -74,6 +74,13 @@ def mode_Motor(myQ):
             myQ.motor[usedMotor].setW(myQ.rc.throttle)
 
             myQ.writeLog(currentTime - initTime)
+
+            #used for performance test only
+            doPerf = False
+            if doPerf is True:
+                counterPerf += 1
+                if  counterPerf == 1000:
+                    logger.debug('MODE-MOTOR 1000 cycles time:' + str(initTime - currentTime))
 
     except:
         logger.critical('Unexpected error:', sys.exc_info()[0])

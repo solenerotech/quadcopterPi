@@ -29,9 +29,8 @@ def setupLogger(name, debuglevel, file_name):
     logger.setLevel(logging.DEBUG)
     #formatter = logging.Formatter(
     #    "%(asctime)s %(threadName)-11s %(levelname)-10s %(message)s")
-    formatter = logging.Formatter(
-        '%(asctime) -25s - %(name) -20s - %(levelname) -10s - %(message)s')
-
+    formatter = logging.Formatter('%(asctime) -25s - %(name) -15s - %(levelname) -10s - %(message)s')
+    formatterDisplay = logging.Formatter('%(asctime)-8s|%(name)-12s|%(levelname)-6s|%(message)-s', '%H:%M:%S')
     # Alternative formatting available on python 3.2+:
     # formatter = logging.Formatter(
     #     "{asctime} {threadName:>11} {levelname} {message}", style='{')
@@ -45,7 +44,7 @@ def setupLogger(name, debuglevel, file_name):
     # Log to stdout too
     streamhandler = logging.StreamHandler()
 
-    streamhandler.setFormatter(formatter)
+    streamhandler.setFormatter(formatterDisplay)
     logger.addHandler(streamhandler)
 
     if debuglevel:
@@ -56,3 +55,4 @@ def setupLogger(name, debuglevel, file_name):
         streamhandler.setLevel(logging.INFO)
 
     return logger
+

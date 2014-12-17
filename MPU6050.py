@@ -37,6 +37,7 @@ import time
 import logging
 import sys
 
+
 ############################################################################################
 #
 #  Adafruit i2c interface plus bug fix
@@ -51,7 +52,7 @@ class I2C:
         try:
             self.bus = smbus.SMBus(1)
         except:
-            self.logger.critical('Error smbu')
+            self.logger.critical('Error SMBus')
 
     def reverseByteOrder(self, data):
         "Reverses the byte order of an int (16-bit) or long (32-bit) value"
@@ -318,47 +319,31 @@ class MPU6050:
             self.roll_g_cal = 0
             self.pitch_g_cal = 0
             self.yaw_g_cal = 0
+            self.gyro_scale = 0
             self.sensor_data = array('B', [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
             self.result_array = array('h', [0, 0, 0, 0, 0, 0, 0])
-            ###logger = logging.get##logger(__name__)
-            ##logger.info('Reseting MPU-6050')
 
             #---------------------------------------------------------------------------
             # Reset all registers
             #---------------------------------------------------------------------------
-            ##logger.debug('Reset all registers')
-            #SNT note: corrected the param
-            self.i2c.write8(self.__MPU6050_RA_PWR_MGMT_1,0x80)
-            #self.i2c.write8(self.__MPU6050_RA_CONFIG, 0x80)
+            self.i2c.write8(self.__MPU6050_RA_PWR_MGMT_1, 0x80)
             time.sleep(5)
-
-            #---------------------------------------------------------------------------
-            # ********************************: Experimental :**************************
-
 
             #---------------------------------------------------------------------------
             # Sets clock source to gyro reference w/ PLL
             #---------------------------------------------------------------------------
-            ##logger.debug('Clock gyro PLL con x reference')
             #SNT: 0x02 >> 0x03 (pll con z gyro reference)
             self.i2c.write8(self.__MPU6050_RA_PWR_MGMT_1, 0x03)
             time.sleep(0.005)
 
-
             # Sets sample rate to 1000/1+4 = 200Hz
             #---------------------------------------------------------------------------
-            ##logger.debug('Sample rate 100Hz')
             self.i2c.write8(self.__MPU6050_RA_SMPLRT_DIV, 0x04)
             time.sleep(0.005)
 
             #SoleNeroTech note: moved up this part of the code to solve a bug in MPU6050:
             #CONFIG has to be set just after PWR_MGMT_1
             #---------------------------------------------------------------------------
-            # ********************************: Experimental :**************************
-            # Disable FSync, 5Hz DLPF => 1kHz sample frequency used above divided by the
-            # sample divide factor.
-            #---------------------------------------------------------------------------
-            ##logger.debug('5Hz DLPF')
             # 0x02 => 98Hz  2ms delay
             # 0x03 => 40Hz  4
             # 0x04 => 20Hz  8
@@ -366,27 +351,16 @@ class MPU6050:
             self.i2c.write8(self.__MPU6050_RA_CONFIG, 0x05)
             time.sleep(0.005)
 
-            #print(str(self.i2c.readU8(self.__MPU6050_RA_CONFIG)))
-
-            #---------------------------------------------------------------------------
-            # ********************************: Experimental :**************************
-            # Disable gyro self tests, scale of +/- 500 degrees/s
             #---------------------------------------------------------------------------
             #0x00=+/-250 0x08=+/- 500    0x10=+/-1000 0x18=+/-2000
-            #logger.debug('Gyro +/-500 degrees/s')
             #SoleNeroTech  modified in 0x00
             self.i2c.write8(self.__MPU6050_RA_GYRO_CONFIG, 0x00)
-            self.gyro_scale=250
+            self.gyro_scale = 250
             time.sleep(0.005)
 
             #---------------------------------------------------------------------------
-            # ********************************: Experimental :**************************
-            # Disable accel self tests, scale of +/-2g
-            #---------------------------------------------------------------------------
             #0x00=+/-2 0x08=+/- 4    0x10=+/-8 0x18=+/-16
-            #logger.debug('Accel +/- 2g')
             self.i2c.write8(self.__MPU6050_RA_ACCEL_CONFIG, 0x00)
-            self.accel_scale=2
             time.sleep(0.005)
 
             #--------------------------------------------------------------------------
@@ -417,8 +391,6 @@ class MPU6050:
             ##logger.debug('Interrupt data ready')
             self.i2c.write8(self.__MPU6050_RA_INT_ENABLE, 0x01)
             time.sleep(0.005)
-
-            ##logger.debug('Gumph hereafter...')
 
             #---------------------------------------------------------------------------
             # Freefall threshold of |0mg|
@@ -527,11 +499,7 @@ class MPU6050:
             logger.critical('Unexpected error:', sys.exc_info()[0])
 
     def readSensorsRaw(self):
-        #---------------------------------------------------------------------------
-        # Clear the interrupt by reading the interrupt status register,
-        #---------------------------------------------------------------------------
-        #self.i2c.readU8(self.__MPU6050_RA_INT_STATUS)
-        #time.sleep(0.001)
+
         #---------------------------------------------------------------------------
         # Hard loop on the data ready interrupt until it gets set high
         #---------------------------------------------------------------------------
@@ -543,18 +511,6 @@ class MPU6050:
         # Disable the interrupt while we read the data
         #---------------------------------------------------------------------------
         self.i2c.write8(self.__MPU6050_RA_INT_ENABLE, 0x00)
-
-#           #---------------------------------------------------------------------------
-#           # Read the sensor data, keeping the interrupt latched
-#           #---------------------------------------------------------------------------
-#           ax = self.i2c.readS16(self.__MPU6050_RA_ACCEL_XOUT_H)
-#           ay = self.i2c.readS16(self.__MPU6050_RA_ACCEL_YOUT_H)
-#           az = self.i2c.readS16(self.__MPU6050_RA_ACCEL_ZOUT_H)
-#           gx = self.i2c.readS16(self.__MPU6050_RA_GYRO_XOUT_H)
-#           gy = self.i2c.readS16(self.__MPU6050_RA_GYRO_YOUT_H)
-#           gz = self.i2c.readS16(self.__MPU6050_RA_GYRO_ZOUT_H)
-#
-#           self.result_array = [ax, ay, az, 0, gx, gy, gz]
 
         #---------------------------------------------------------------------------
         # For speed of reading, read all the sensors and parse to USHORTs after
@@ -575,7 +531,6 @@ class MPU6050:
 
     def readSensors(self):
         #---------------------------------------------------------------------------
-        # +/- 2g 2 * 16 bit range for the accelerometer
         # +/- 250 degrees * 16 bit range for the gyroscope
         #---------------------------------------------------------------------------
 
@@ -593,6 +548,7 @@ class MPU6050:
         fgz = float(gz - self.yaw_g_cal) * scale_g
 
         temp = (float(temp) / 340) + 36.53
+
         return fax, fay, faz, fgx, fgy, fgz, temp
 
     def updateOffsets(self, file_name):
@@ -615,6 +571,9 @@ class MPU6050:
 
             time.sleep(0.05)
 
+        #---------------------------------------------------------------------------
+        #calculate the calibration angles of the accel.
+        #---------------------------------------------------------------------------
         #ATTENTION atan2(y,x) while in excel is atan2(x,y)
         self.roll_a_cal = round(math.atan2(y_a_cal, z_a_cal) * 180 / math.pi, 3)
         self.pitch_a_cal = round(math.atan2(x_a_cal, z_a_cal) * 180 / math.pi, 3)

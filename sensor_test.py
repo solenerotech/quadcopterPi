@@ -1,10 +1,30 @@
-#solenero.tech@gmail.com
-#solenerotech.wordpress.com
+############################################################################
+#
+#    QuadcopeRPI- SW for controlling a quadcopter by RPI
+#
+#    Copyright (C) 2014 Oscar Ferrato (solenero tech)
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#    Contact me at:
+#    solenero.tech@gmail.com
+#    solenerotech.wordpress.com
+##############################################################################
 
 from sensor import sensor
 import curses
-from logger_manager import setupLogger
-from time import sleep
+from loggingQ import setupLogger
+
 
 import argparse
 
@@ -18,7 +38,7 @@ args = parser.parse_args()
 calibIMU = args.calibIMU
 saveLog = args.saveLog
 
-mySensor = sensor(savelog=saveLog,simulation=False)
+mySensor = sensor(savelog=saveLog, simulation=False)
 
 if calibIMU:
     mySensor.calibrate()
@@ -55,7 +75,6 @@ try:
         s2 = 'GYRO |roll: ' + str(mySensor.roll_g)
         s2 += '|pitch: ' + str(mySensor.pitch_g)
         s2 += '|yaw: ' + str(mySensor.yaw_g)
-
 
         #screen.clear()
         screen.addstr(1, 1, 'Press any button to stop')

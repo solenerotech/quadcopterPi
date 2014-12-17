@@ -52,9 +52,11 @@ class quadcopter(object):
 #GPIO: 18 23 24 25
 #pin : 12 16 18 22
 
-        self.logger = logging.getLogger('myQ.quadcopter')
+        self.logger = logging.getLogger('myQ.quadcptr')
         self.name = name
         self.simulation = simulation
+
+        self.version = 1
 
         self.motor = [motor('M' + str(i), 0) for i in xrange(4)]
         self.motor[0] = motor('M0', pin0, kv=1000, WMin=0, WMax=100, simulation=self.simulation)
@@ -62,12 +64,7 @@ class quadcopter(object):
         self.motor[2] = motor('M2', pin2, kv=1000, WMin=0, WMax=100, simulation=self.simulation)
         self.motor[3] = motor('M3', pin3, kv=1000, WMin=0, WMax=100, simulation=self.simulation)
 
-        #TODO gestire in myQ...
-        self.sensor = sensor(savelog=True,simulation=False)
-
-        self.display = display(self, refreshtime=1)
-
-        self.rc = rc(self.display.screen)
+        self.sensor = sensor(simulation=self.simulation)
 
         self.pidR = pid()
         self.pidP = pid()
@@ -75,12 +72,18 @@ class quadcopter(object):
         self.pidR_rate = pid()
         self.pidP_rate = pid()
         self.pidY_rate = pid()
+
         self.ip = '192.168.1.1'
 
         self.netscan = netscan(self.ip)
 
         self.webserver = webserver(self)
 
+        self.display = display(self)
+
+        self.rc = rc(self.display.screen)
+
+        self.imulog = False
         self.savelog = False
         self.calibIMU = False
         self.debuglev = 0
@@ -100,9 +103,9 @@ class quadcopter(object):
         try:
             with open(file_name, 'r') as cfg_file:
                 ver = self.getInt(cfg_file)
-                if ver is not 1:
+                if ver is not self.version:
                     self.logger.critical('cfg file not compatible: need version 1')
-                self.ip = self.getStr(cfg_file)
+                self.ip = self.getIp(cfg_file)
                 self.motor[0].pin = self.getInt(cfg_file)
                 self.motor[1].pin = self.getInt(cfg_file)
                 self.motor[2].pin = self.getInt(cfg_file)
@@ -114,19 +117,47 @@ class quadcopter(object):
 
     def getStr(self, cfg_file):
         strg = cfg_file.readline()
+        strg = strg[:-1]  # remove last char \n
         while strg[0] == '#':
             self.logger.debug('Loading comment %s ', strg)
             strg = cfg_file.readline()
+        strg = strg[:-1]  # remove last char \n
         strg = strg.split('=')
-        self.logger.debug('Loading data %s ', strg[1])
+        self.logger.debug('Loading str %s ', strg[1])
         return strg[1]
+
+    def getIp(self, cfg_file):
+        strg = cfg_file.readline()
+        strg = strg[:-1]  # remove last char \n
+        while strg[0] == '#':
+            self.logger.debug('Loading comment %s ', strg)
+            strg = cfg_file.readline()
+            strg = strg[:-1]  # remove last char \n
+        strg = strg.split('=')
+        strg = strg[1].split('.')
+        #self.logger.debug(strg)
+        #self.logger.debug('Loading ip %s.%s.%s.%s', strg[0],strg[1],strg[2],strg[3])
+        #TODO here add check on values
+        errr = 0
+        for i in range(4):
+            n = int(strg[i])
+            if n < 0 or n > 255:
+                errr += 1
+        if errr > 0:
+            self.logger.erro('IP not correct')
+        s = ''
+        s = strg[0] + '.' + strg[1] + '.' + strg[2] + '.' + strg[3]
+        #self.logger.debug(s)
+        return s
 
     def getInt(self, cfg_file):
         strg = cfg_file.readline()
+        strg = strg[:-1]  # remove last char \n
         while strg[0] == '#':
             self.logger.debug('Loading comment %s ', strg)
             strg = cfg_file.readline()
         strg = strg.split('=')
+
         self.logger.debug('Loading data %d ', int(strg[1]))
         return int(strg[1])
 
@@ -135,8 +166,11 @@ class quadcopter(object):
         #remember to use ''PARAM_NAME' + '='
         try:
             with open(file_name, 'w+') as cfg_file:
-                cfg_file.write('ver=1')
+                cfg_file.write('#Quadcopter cfg file\n')
+                cfg_file.write('ver=%d\n', self.version)
+                cfg_file.write('#remote control IP address \n')
                 cfg_file.write('IP=%s\n' % self.ip)  # example for string
+                cfg_file.write('#raspberry GPIO \n')
                 cfg_file.write('M0=%d\n' % self.motor[0].pin)
                 cfg_file.write('M1=%d\n' % self.motor[1].pin)
                 cfg_file.write('M2=%d\n' % self.motor[2].pin)

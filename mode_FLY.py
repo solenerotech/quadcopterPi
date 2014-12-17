@@ -28,9 +28,9 @@ import logging
 import sys
 
 
-def mode_PID(myQ):
+def mode_FLY(myQ):
 
-    logger = logging.getLogger('myQ.mode_PID')
+    logger = logging.getLogger('myQ.mode_FLY')
 
     cycleTime = 0.010  # [s]
 
@@ -45,7 +45,7 @@ def mode_PID(myQ):
 
         #wait ack from user to start motors
         while myQ.rc.command != 9 and myQ.rc.command != -1 and myQ.rc.cycling:
-            pass
+            sleep(0.001)
 
         if myQ.rc.command != -1:
             myQ.rc.command = 0
@@ -67,9 +67,20 @@ def mode_PID(myQ):
 
             # user commands:
             if myQ.rc.command == 0:
-                corrR = 0
-                corrP = 0
+                myQ.netscan.start(myQ.ip)
             elif myQ.rc.command == 1:
+                #here can set different pid setting
+                #myQ.pid...
+                pass
+            elif myQ.rc.command == 2:
+                #here can set different pid setting
+                #myQ.pid...
+                pass
+            elif  myQ.rc.command == 3:
+                #here can set different pid setting
+                #myQ.pid...
+                pass
+            elif  myQ.rc.command == 4:
                 #included 2 incapsulated pid for each angle:
                 #1) get the Wcorr as roll PID
                 #2) divide it for the cycletime to get a rot speed (target roll_rate)
@@ -90,56 +101,10 @@ def mode_PID(myQ):
 
                 #TODO remove to activate pitch
                 #corrP = 0
-
-            elif myQ.rc.command == 2:
-                #swtch between roll and roll rate tuning
-                if tuningRollRate is True:
-                    tuningRollRate = False
-                else:
-                    tuningRollRate = True
-                myQ.rc.command = 1
-
-            elif  myQ.rc.command == 3:
-                if tuningRollRate is True:
-                    myQ.pidR_rate.set(myQ.pidR_rate.kp + 0.001, myQ.pidR_rate.ki, myQ.pidR_rate.kd, maxCorr=15)
-                else:
-                    myQ.pidR.set(myQ.pidR.kp + 0.001, myQ.pidR.ki, myQ.pidR.kd, maxCorr=15)
-                myQ.rc.command = 1
-
-            elif  myQ.rc.command == 4:
-                if tuningRollRate is True:
-                    myQ.pidR_rate.set(myQ.pidR_rate.kp - 0.001, myQ.pidR_rate.ki, myQ.pidR_rate.kd, maxCorr=15)
-                else:
-                    myQ.pidR.set(myQ.pidR.kp - 0.001, myQ.pidR.ki, myQ.pidR.kd, maxCorr=15)
-                myQ.rc.command = 1
-
-            elif  myQ.rc.command == 5:
-                if tuningRollRate is True:
-                    myQ.pidR_rate.set(myQ.pidR_rate.kp, myQ.pidR_rate.ki + 0.001, myQ.pidR_rate.kd, maxCorr=15)
-                else:
-                    myQ.pidR.set(myQ.pidR.kp, myQ.pidR.ki + 0.001, myQ.pidR.kd, maxCorr=15)
-                myQ.rc.command = 1
-
-            elif  myQ.rc.command == 6:
-                if tuningRollRate is True:
-                    myQ.pidR_rate.set(myQ.pidR_rate.kp, myQ.pidR_rate.ki - 0.001, myQ.pidR_rate.kd, maxCorr=15)
-                else:
-                    myQ.pidR.set(myQ.pidR.kp, myQ.pidR.ki - 0.001, myQ.pidR.kd, maxCorr=15)
-                myQ.rc.command = 1
-
-            elif  myQ.rc.command == 7:
-                if tuningRollRate is True:
-                    myQ.pidR_rate.set(myQ.pidR_rate.kp, myQ.pidR_rate.ki, myQ.pidR_rate.kd + 0.001, maxCorr=15)
-                else:
-                    myQ.pidR.set(myQ.pidR.kp, myQ.pidR.ki, myQ.pidR.kd + 0.001, maxCorr=15)
-                myQ.rc.command = 1
-
-            elif  myQ.rc.command == 8:
-                if tuningRollRate is True:
-                    myQ.pidR_rate.set(myQ.pidR_rate.kp, myQ.pidR_rate.ki, myQ.pidR_rate.kd - 0.001, maxCorr=15)
-                else:
-                    myQ.pidR.set(myQ.pidR.kp, myQ.pidR.ki, myQ.pidR.kd - 0.001, maxCorr=15)
-                myQ.rc.command = 1
+            else:
+                corrR = 0
+                corrP = 0
+                corrY = 0
 
             #TODO add yaw pid control here and throttle pid control
 
@@ -148,8 +113,8 @@ def mode_PID(myQ):
             myQ.motor[0].setW(myQ.rc.throttle + corrR)
             myQ.motor[2].setW(myQ.rc.throttle - corrR)
 
-            #myQ.motor[1].setW(myQ.rc.throttle - corrP)
-            #myQ.motor[3].setW(myQ.rc.throttle + corrP)
+            myQ.motor[1].setW(myQ.rc.throttle - corrP)
+            myQ.motor[3].setW(myQ.rc.throttle + corrP)
 
             myQ.writeLog(currentTime - initTime)
 

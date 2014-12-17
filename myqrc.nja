@@ -1,9 +1,9 @@
 {
-  "mainFile": "C:/Data/Oscar/Tecnologia/quadcopter/sw/qpi 2014.09.09 beta3/beta3.py", 
+  "mainFile": "C:/Data/Oscar/Tecnologia/quadcopter/sw/2014.12.17 myQ1/myQrc.py", 
   "use-tabs": false, 
   "venv": "", 
   "relatedProjects": [], 
-  "name": "qpi", 
+  "name": "myQrc", 
   "license": "GNU General Public License v3", 
   "url": "", 
   "pythonPath": "C:/Program Files/python275/pythonw.exe", 
@@ -11,7 +11,7 @@
   "additional_builtins": [], 
   "programParams": "", 
   "indentation": 4, 
-  "PYTHONPATH": "C:/Data/Oscar/Tecnologia/quadcopter/sw/qpi 2014.02.16 alfa3/", 
+  "PYTHONPATH": "", 
   "supported-extensions": [
     ".py", 
     ".html", 
@@ -25,5 +25,5 @@
   ], 
   "project-type": "", 
   "postExecScript": "", 
-  "description": "2013.07.12 v 0.1  "
+  "description": "2014.12.17  release candidate"
 }

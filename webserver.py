@@ -31,6 +31,9 @@ from os import curdir, sep
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
 
+#TODO  debug this class because it can become instable on raspberry
+#not officially supported in myQ revision 1
+
 class webserver(threading.Thread):
 
     def __init__(self, data):
@@ -38,19 +41,52 @@ class webserver(threading.Thread):
         #Nte:this is a generic approach, valid whatever it is the passed data
 
         self.server = HTTPServer(('', 80), MyHandler)
-        self.logger = logging.getLogger('myQ.webserver')
+        self.logger = logging.getLogger('myQ.webservr')
 
         MyHandler.myQ = data
-        MyHandler.logger = logging.getLogger('myQ.webserver.handler')
+        MyHandler.logger = logging.getLogger('myQ.webser.H')
         try:
             f = open(curdir + sep + '/myQwebpage/myQ.html')
             MyHandler.mypage = f.read()
             f.close()
             MyHandler.logger.debug(MyHandler.mypage)
         except IOError, err:
-            self.logger.critical('Error %d, %s accessing file: %s', err.errno, err.strerror, 'index.html')
-        except:
-            self.logger.critical('Error')
+            self.logger.critical('Error %d, %s accessing file: %s', err.errno, err.strerror, 'myQ.html')
+
+        try:
+            f = open(curdir + sep + '/myQwebpage/up.png')
+            MyHandler.png_up = f.read()
+            f.close()
+        except IOError, err:
+            self.logger.critical('Error %d, %s accessing file: %s', err.errno, err.strerror, 'up.png')
+
+        try:
+            f = open(curdir + sep + '/myQwebpage/down.png')
+            MyHandler.png_down = f.read()
+            f.close()
+        except IOError, err:
+            self.logger.critical('Error %d, %s accessing file: %s', err.errno, err.strerror, 'down.png')
+
+        try:
+            f = open(curdir + sep + '/myQwebpage/left.png')
+            MyHandler.png_left = f.read()
+            f.close()
+        except IOError, err:
+            self.logger.critical('Error %d, %s accessing file: %s', err.errno, err.strerror, 'left.png')
+
+        try:
+            f = open(curdir + sep + '/myQwebpage/right.png')
+            MyHandler.png_right = f.read()
+            f.close()
+        except IOError, err:
+            self.logger.critical('Error %d, %s accessing file: %s', err.errno, err.strerror, 'right.png')
+
+        try:
+            f = open(curdir + sep + '/myQwebpage/stop.png')
+            MyHandler.png_stop = f.read()
+            f.close()
+        except IOError, err:
+            self.logger.critical('Error %d, %s accessing file: %s', err.errno, err.strerror, 'stop.png')
 
     def run(self):
         try:
@@ -61,25 +97,53 @@ class webserver(threading.Thread):
 
     def stop(self):
         self.server.socket.close()
-        self.logger.debug('Webserver stopping...')
+        self.logger.debug('Webserver stopped')
 
 
 class MyHandler(BaseHTTPRequestHandler):
     #This class is specific for teh data to be managed. It is the part to be implemented
 
     def do_GET(self):
+
         try:
 
-            if self.path.endswith(".png"):
-
-                self.logger.debug('/myQwebpage' + self.path)
-                f = open(curdir + sep + '/myQwebpage' + self.path, 'rb')
+            #image loaded once in init to speed up the comm
+            if self.path.startswith("/up.png"):
                 self.send_response(200)
                 self.send_header('Content-type', 'image/png')
                 self.end_headers()
-                self.wfile.write(f.read())
-                f.close()
+                self.wfile.write(self.png_up)
                 return
+
+            if self.path.startswith("/down.png"):
+                self.send_response(200)
+                self.send_header('Content-type', 'image/png')
+                self.end_headers()
+                self.wfile.write(self.png_down)
+                return
+            if self.path.startswith("/left.png"):
+                self.send_response(200)
+                self.send_header('Content-type', 'image/png')
+                self.end_headers()
+                self.wfile.write(self.png_left)
+                return
+            if self.path.startswith("/right.png"):
+                self.send_response(200)
+                self.send_header('Content-type', 'image/png')
+                self.end_headers()
+                self.wfile.write(self.png_right)
+                return
+            if self.path.startswith("/stop.png"):
+                self.send_response(200)
+                self.send_header('Content-type', 'image/png')
+                self.end_headers()
+                self.wfile.write(self.png_stop)
+                return
+
+        except:
+            self.logger.critical('Unexpected error1')
+
+        try:
 
             #here manage teh commands
             if self.path.startswith("/command_incr"):
@@ -111,12 +175,15 @@ class MyHandler(BaseHTTPRequestHandler):
 
             if self.path.startswith("/throttle_incr"):
                 self.myQ.rc.throttle = self.myQ.rc.throttle + 1
-
+                self.logger.debug('5')
             if self.path.startswith("/throttle_decr"):
                 self.myQ.rc.throttle = self.myQ.rc.throttle - 1
 
             #here return the page with updated information
+        except:
+            self.logger.critical('Unexpected error2')
 
+        try:
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
@@ -131,4 +198,4 @@ class MyHandler(BaseHTTPRequestHandler):
 
             return
         except:
-            self.logger.critical('Unexpected error:', sys.exc_info()[0])
+            self.logger.critical('Unexpected error3')

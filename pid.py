@@ -47,7 +47,6 @@ class pid(object):
         self.error = 0
         self.maxCorr = maxCorr
         self.previousError = 0
-        #self.errorD =[0,0,0,0,0]
 
     def set(self, kp, ki, kd, maxCorr=20):
         self.kp = kp
@@ -58,19 +57,10 @@ class pid(object):
 
     def calc(self, target, feedback, stepTime):
 
-        #for i in range(4):
-        #    self.errorD[i+1] = self.errorD[i]
-
         self.error = target - feedback
 
         self.P = self.error * self.kp
         self.I += (self.error * stepTime) * self.ki
-        #self.errorD[0] = ((self.error - self.previousError) / stepTime)
-        #self.D = (self.errorD[0]+self.errorD[1]+self.errorD[2]+self.errorD[3]+self.errorD[4])/5 * self.kd
-        #to calculate D,make an average of the last 5 errors in order to
-        #avoid
-        #self.D = (self.errorD[0]+self.errorD[1]+self.errorD[2])/3 * self.kd
-
         self.D = ((self.error - self.previousError) / stepTime) * self.kd
 
         self.corr = self.P + self.I + self.D

@@ -24,17 +24,17 @@
 from time import sleep
 import threading
 import logging
+from pingQ import ping_one
 
 #2014.09.20
-
-from subprocess import Popen, PIPE, STDOUT
+#2014.11.20 tested on rpi- solved some bugs due to the different os used
 
 
 class netscan(threading.Thread):
     """Check the connection qpi - PC
         """
 
-    def __init__(self, ip='192.168.1.1', timeout=300,):
+    def __init__(self, ip='192.168.0.40', timeout=2):
 
         threading.Thread.__init__(self)
         self.logger = logging.getLogger('myQ.netscan')
@@ -43,46 +43,42 @@ class netscan(threading.Thread):
         self.timeout = timeout
         self.cycling = True
         self.connectionUp = False
+        self.badConnCounter = 0
 
     def run(self):
 #this function is called by the start function, inherit from threading.thread
 
         self.logger.debug('netscan running...')
         while self.cycling:
-            if  self.scanIp(self.ip) == 0:
-                self.logger.debug('OK')
-                self.connectionUp = True
+            res = ping_one(self.ip, self.timeout)
+            if  res >= 0:
+                self.logger.debug('OK ' + str(res))
+                self.badConnCounter = 0
             else:
+                self.badConnCounter += 1
+                self.logger.debug('NOT OK ' + str(res))
+
+            if self.badConnCounter > 1:
                 self.connectionUp = False
-                self.logger.debug('NOK-------------')
+                self.logger.error('Connection lost with ' + str(self.ip))
+            else:
+                self.connectionUp = True
             sleep(0.300)
 
+        self.logger.debug('nescan stopped')
+
     def stop(self):
-        self.logger.debug('nescan stopping...')
         self.cycling = False
-
-    def scanIp(self, ip):
-        self.logger.debug('1')
-        try:
-            #p = Popen("ping -w " + str(self.timeout) + " " + ip, stderr=STDOUT, stdout=PIPE)
-            p = Popen("ping -c 1 " + ip, stderr=STDOUT, stdout=PIPE)
-
-            self.logger.debug('2')
-            p.communicate()
-            self.logger.debug('3')
-            p.terminate()
-            self.logger.debug('4')
-            return  p.returncode
-        except:
-            self.logger.debug('nescan error...')
-
+        self.logger.debug('nescan stopping...')
 
     def scanAll(self, subip='192.168.0.'):
         res = ''
         for i in xrange(254):
             ip = subip + str(i)
-            if  self.scanIp(ip) == 0:
-                res += ip + '\n'
+            if  ping_one(ip, self.timeout) >= 0:
+                res = ip + '<<<<<OK \n'
                 print res
-            print str(i)
-            sleep(0.300)
+            else:
+                res = ip + '<NO\n'
+                print res
+

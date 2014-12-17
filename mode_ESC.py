@@ -48,7 +48,7 @@ def mode_ESC(myQ):
         currentTime = initTime
 
         #displayCommand()
-        while myQ.rc.cycling is True and myQ.rc.command != -1:
+        while myQ.rc.cycling is True and myQ.rc.command != -1 and myQ.netscan.connectionUp is True:
 
             #manage cycletime
             while currentTime <= previousTime + cycleTime:

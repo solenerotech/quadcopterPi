@@ -62,6 +62,7 @@ class rc(threading.Thread):
         self.MODE_PID_TUNING = 3
         self.MODE_FLYING = 4
         self.MODE_UAV = 5
+        self.MODE_UNDEF = -1
 
     def run(self):
 
@@ -77,6 +78,7 @@ class rc(threading.Thread):
             res = self.screen.getch()
             if res == 32:  # 32 =SPACEBAR
                 self.cycling = False
+                self.logger.info('Request to stop myQ')
             else:
                 if res == ord('0'):
                     self.command = 0
@@ -145,6 +147,8 @@ class rc(threading.Thread):
                     self.yaw = self.yawMin
                 elif self.yaw > self.yawMax:
                     self.yaw = self.yawMax
+
+        self.logger.debug('RC stopped')
 
     def stop(self):
         self.logger.debug('RC stopping...')

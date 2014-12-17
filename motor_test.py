@@ -1,3 +1,25 @@
+############################################################################
+#
+#    QuadcopeRPI- SW for controlling a quadcopter by RPI
+#
+#    Copyright (C) 2014 Oscar Ferrato (solenero tech)
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#    Contact me at:
+#    solenero.tech@gmail.com
+#    solenerotech.wordpress.com
+##############################################################################
 """
 test code for motor class
 
@@ -18,18 +40,6 @@ Read hw manuals of your own hw for details.
 See blog for esc wiring.
 
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the version 3 GNU General Public License as
-published by the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 #solenerotech 2013.09.06
 
 #solenerotech 2014.04.23
@@ -45,7 +55,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import argparse
 from motor import motor
 from sensor import sensor
-from logger_manager import setupLogger
+from loggingQ import setupLogger
 
 
 
