@@ -100,11 +100,14 @@ class sensor(threading.Thread):
         #except:
             #self.logger.critical('Unexpected error:', sys.exc_info()[0])
 
-    def calibrate(self):
+    def calibrate(self, fine=False):
         if self.simulation is False:
-            self.logger.debug('IMU calibrating...')
-            self.IMU.updateOffsets('IMU.cfg')
+            self.IMU.updateOffsets('IMU.cfg',fine)
             self.IMU.readOffsets('IMU.cfg')
+            self.roll = 0
+            self.pitch = 0
+            self.yaw = 0
+
 
     def run(self):
         #this function is called by the start function, inherit from threading.thread
@@ -175,16 +178,16 @@ class sensor(threading.Thread):
 
     def getAngleGyro(self, dt):
         "return the angle calculated on the gyro"
-        self.roll_g = round(self.roll + self.r_rate * dt, 3)
-        self.pitch_g = round(self.pitch + self.p_rate * dt, 3)
-        self.yaw_g = round(self.yaw + self.y_rate * dt, 3)
+        self.roll_g = self.roll + self.r_rate * dt
+        self.pitch_g = self.pitch + self.p_rate * dt
+        self.yaw_g = self.yaw + self.y_rate * dt
 
     def getAngleAcc(self):
         "return the angle calculated on the accelerometer."
         #ATTENTION atan2(y,x) while in excel is atan2(x,y)
-        self.roll_a = round(math.atan2(self.y_acc, self.z_acc) * 180 / math.pi, 3) - self.IMU.roll_a_cal
+        self.roll_a = (math.atan2(self.y_acc, self.z_acc) * 180 / math.pi) - self.IMU.roll_a_cal
         # sign minus to inverte the rference system
-        self.pitch_a = -(round(math.atan2(self.x_acc, self.z_acc) * 180 / math.pi, 3) - self.IMU.pitch_a_cal)
+        self.pitch_a = -((math.atan2(self.x_acc, self.z_acc) * 180 / math.pi) - self.IMU.pitch_a_cal)
         #Note that yaw value is not calculable using acc info
         #function returns y value just for keep a consistent structure
         self.yaw_a = 0
@@ -201,6 +204,7 @@ class sensor(threading.Thread):
         self.getAngleAcc()
         self.getAngleGyro(dt)
         a = tau / (tau + dt)
+        #a = 0 # only acc
         self.roll = round(a * (self.roll_g) + (1 - a) * self.roll_a, 3)
         self.pitch = round(a * (self.pitch_g) + (1 - a) * self.pitch_a, 3)
         #note the yaw angle can be calculated only using the

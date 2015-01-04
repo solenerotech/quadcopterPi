@@ -68,13 +68,13 @@ class display(threading.Thread):
         i = 2
         self.padQ.addstr(i, 0, '|W')
         self.padQ.addstr(i, 10, '|W')
-        self.padQ.addstr(i, 11, str(self.myQ.motor[0].getW()))
+        self.padQ.addstr(i, 11, '%.1f' % self.myQ.motor[0].getW())
         self.padQ.addstr(i, 20, '|')
-        self.padQ.addstr(i, 21, str(self.myQ.motor[1].getW()))
+        self.padQ.addstr(i, 21,'%.1f' % self.myQ.motor[1].getW())
         self.padQ.addstr(i, 30, '|')
-        self.padQ.addstr(i, 31, str(self.myQ.motor[2].getW()))
+        self.padQ.addstr(i, 31,'%.1f' % self.myQ.motor[2].getW())
         self.padQ.addstr(i, 40, '|')
-        self.padQ.addstr(i, 41, str(self.myQ.motor[3].getW()))
+        self.padQ.addstr(i, 41,'%.1f' % self.myQ.motor[3].getW())
         self.padQ.addstr(i, 50, '|')
         i = 3
         self.padQ.addstr(i, 0, '|-------------------------------------------------|')
@@ -92,24 +92,24 @@ class display(threading.Thread):
         i = 5
         self.padQ.addstr(i, 00, '|target')
         self.padQ.addstr(i, 10, '|')
-        self.padQ.addstr(i, 11, '%.3f' % self.myQ.rc.roll)
+        self.padQ.addstr(i, 11, '%.1f' % self.myQ.rc.roll)
         self.padQ.addstr(i, 20, '|')
-        self.padQ.addstr(i, 21, '%.3f' % self.myQ.rc.pitch)
+        self.padQ.addstr(i, 21, '%.1f' % self.myQ.rc.pitch)
         self.padQ.addstr(i, 30, '|')
-        self.padQ.addstr(i, 31, '%.3f' % self.myQ.rc.yaw)
+        self.padQ.addstr(i, 31, '%.1f' % self.myQ.rc.yaw)
         self.padQ.addstr(i, 40, '|')
-        self.padQ.addstr(i, 41, '%.3f' % self.myQ.rc.throttle)
+        self.padQ.addstr(i, 41, '%4d' % self.myQ.rc.throttle)
         self.padQ.addstr(i, 50, '|')
         i = 6
         self.padQ.addstr(i, 00, '|current')
         self.padQ.addstr(i, 10, '|')
-        self.padQ.addstr(i, 11, '%.3f' % self.myQ.sensor.roll)
+        self.padQ.addstr(i, 11, '%.1f' % self.myQ.sensor.roll)
         self.padQ.addstr(i, 20, '|')
-        self.padQ.addstr(i, 21, '%.3f' % self.myQ.sensor.pitch)
+        self.padQ.addstr(i, 21, '%.1f' % self.myQ.sensor.pitch)
         self.padQ.addstr(i, 30, '|')
-        self.padQ.addstr(i, 31, '%.3f' % self.myQ.sensor.yaw)
+        self.padQ.addstr(i, 31, '%.1f' % self.myQ.sensor.yaw)
         self.padQ.addstr(i, 40, '|')
-        self.padQ.addstr(i, 41, '%.3f' % self.myQ.rc.throttle)
+        self.padQ.addstr(i, 41, '%4d' % self.myQ.rc.throttle)
         self.padQ.addstr(i, 50, '|')
         i = 7
         self.padQ.addstr(i, 0, '|-------------------------------------------------|')
@@ -117,11 +117,11 @@ class display(threading.Thread):
         i = 0
         self.padQ.addstr(i, 51, '----------------------------|')
         i = 1
-        self.padQ.addstr(i, 51, 'Mode: %d' % self.myQ.rc.mode)
+        self.padQ.addstr(i, 51, 'Mode   : %2d' % self.myQ.rc.mode)
         self.padQ.addstr(i, 65, '|Temp: %.1f' % self.myQ.sensor.temp)
         self.padQ.addstr(i, 79, '|')
         i = 2
-        self.padQ.addstr(i, 51, 'Command: %d' % self.myQ.rc.command)
+        self.padQ.addstr(i, 51, 'Command: %2d' % self.myQ.rc.command)
         self.padQ.addstr(i, 65, '|')
         self.padQ.addstr(i, 79, '|')
         i = 3
@@ -153,31 +153,60 @@ class display(threading.Thread):
         self.padQ.addstr(i, 0, '|------------------------------|SPACEBAR to KILL|------------------------------|')
         self.padQ.refresh(0, 0, 0, 0, 9, 79)
 
-    def displayMode_init(self):
+    def displayMode_welcome(self):
 
         i = 1
-        self.padModeQ.addstr(i, 00, 'Welcome to myQPI')
+        self.padModeQ.addstr(i, 00, 'welcome')
         self.padModeQ.clrtoeol()
         i = 2
-        self.padModeQ.addstr(i, 00, 'use arrows to navigate along the modes.')
+        self.padModeQ.addstr(i, 00, '')
         self.padModeQ.clrtoeol()
         i = 3
         self.padModeQ.addstr(i, 00, '')
         self.padModeQ.clrtoeol()
         i = 4
-        self.padModeQ.addstr(i, 00, 'Enjoy it , but first remember:')
+        self.padModeQ.addstr(i, 00, '')
         self.padModeQ.clrtoeol()
         i = 5
-        self.padModeQ.addstr(i, 00, '                              !!!SAFETY!!!')
+        self.padModeQ.addstr(i, 00, '')
         self.padModeQ.clrtoeol()
         i = 6
-        self.padModeQ.addstr(i, 00, 'before start any activity verify to be in a safe condition')
+        self.padModeQ.addstr(i, 00, '')
         self.padModeQ.clrtoeol()
         i = 7
         self.padModeQ.addstr(i, 00, '')
         self.padModeQ.clrtoeol()
         i = 8
         self.padModeQ.addstr(i, 00, '')
+        self.padModeQ.clrtoeol()
+        i = 9
+        self.padModeQ.addstr(i, 0, '|------------------------------------------------------------------------------|')
+
+    def displayMode_imu(self):
+
+        i = 1
+        self.padModeQ.addstr(i, 00, 'Follow the next steps to calibrate IMU')
+        self.padModeQ.clrtoeol()
+        i = 2
+        self.padModeQ.addstr(i, 00, 'BASIC calibration')
+        self.padModeQ.clrtoeol()
+        i = 3
+        self.padModeQ.addstr(i, 00, '    PRESS 1 and wait 5 seconds')
+        self.padModeQ.clrtoeol()
+        i = 4
+        self.padModeQ.addstr(i, 00, 'FINE calibration')
+        self.padModeQ.clrtoeol()
+        i = 5
+        self.padModeQ.addstr(i, 00, '    1)PRESS 3 and wait 5 seconds')
+        self.padModeQ.clrtoeol()
+        i = 6
+        self.padModeQ.addstr(i, 00, '    2)Turn the drone 180 around yaw')
+        self.padModeQ.clrtoeol()
+        i = 7
+        self.padModeQ.addstr(i, 00, '    3)PRESS 5 and wait 5 seconds')
+        self.padModeQ.clrtoeol()
+        i = 8
+        self.padModeQ.addstr(i, 00, 'Calibration data will be stored in IMU.cfg')
         self.padModeQ.clrtoeol()
         i = 9
         self.padModeQ.addstr(i, 0, '|------------------------------------------------------------------------------|')
@@ -323,6 +352,35 @@ class display(threading.Thread):
         i = 9
         self.padModeQ.addstr(i, 0, '|------------------------------------------------------------------------------|')
 
+    def displayMode_about(self):
+
+        i = 1
+        self.padModeQ.addstr(i, 00, '')
+        self.padModeQ.clrtoeol()
+        i = 2
+        self.padModeQ.addstr(i, 00, '')
+        self.padModeQ.clrtoeol()
+        i = 3
+        self.padModeQ.addstr(i, 00, '')
+        self.padModeQ.clrtoeol()
+        i = 4
+        self.padModeQ.addstr(i, 00, '')
+        self.padModeQ.clrtoeol()
+        i = 5
+        self.padModeQ.addstr(i, 00, '')
+        self.padModeQ.clrtoeol()
+        i = 6
+        self.padModeQ.addstr(i, 00, '')
+        self.padModeQ.clrtoeol()
+        i = 7
+        self.padModeQ.addstr(i, 00, '')
+        self.padModeQ.clrtoeol()
+        i = 8
+        self.padModeQ.addstr(i, 00, '')
+        self.padModeQ.clrtoeol()
+        i = 9
+        self.padModeQ.addstr(i, 0, '|------------------------------------------------------------------------------|')
+
     def displayModeQ(self):
 
         self.padModeQ.redrawwin()
@@ -333,39 +391,41 @@ class display(threading.Thread):
         self.firstcycle = False
 
         i = 0
-        self.padModeQ.addstr(i, 00, '|___INIT__')
-        self.padModeQ.addstr(i, 10, '|___ESC___')
-        self.padModeQ.addstr(i, 20, '|___Motor_')
-        self.padModeQ.addstr(i, 30, '|___PID___')
-        self.padModeQ.addstr(i, 40, '|__Flying_')
-        self.padModeQ.addstr(i, 50, '|___UAV___')
-        self.padModeQ.addstr(i, 60, '|___void__')
-        self.padModeQ.addstr(i, 70, '|___void__')
+        self.padModeQ.addstr(i, 00, '|_WELCOME_')
+        self.padModeQ.addstr(i, 10, '|___IMU___')
+        self.padModeQ.addstr(i, 20, '|___ESC___')
+        self.padModeQ.addstr(i, 30, '|__MOTOR__')
+        self.padModeQ.addstr(i, 40, '|___PID___')
+        self.padModeQ.addstr(i, 50, '|__Flying_')
+        self.padModeQ.addstr(i, 60, '|___UAV___')
+        self.padModeQ.addstr(i, 70, '|__ABOUT__')
         self.padModeQ.addstr(i, 79, '|')
 
         i = 0
-        if self.myQ.rc.mode == self.myQ.rc.MODE_INIT or self.myQ.rc.mode == self.myQ.rc.MODE_UNDEF:
-            self.padModeQ.addstr(i, 00, '|___INIT__', curses.A_REVERSE)
-            self.displayMode_init()
+        if self.myQ.rc.mode == self.myQ.rc.MODE_WELCOME or self.myQ.rc.mode == self.myQ.rc.MODE_UNDEF:
+            self.padModeQ.addstr(i, 00, '|_WELCOME_', curses.A_REVERSE)
+            self.displayMode_welcome()
+        elif self.myQ.rc.mode == self.myQ.rc.MODE_IMU:
+            self.padModeQ.addstr(i, 10, '|___IMU___', curses.A_REVERSE)
+            self.displayMode_imu()
         elif self.myQ.rc.mode == self.myQ.rc.MODE_ESC:
-            self.padModeQ.addstr(i, 10, '|___ESC___', curses.A_REVERSE)
+            self.padModeQ.addstr(i, 20, '|___ESC___', curses.A_REVERSE)
             self.displayMode_esc()
         elif self.myQ.rc.mode == self.myQ.rc.MODE_MOTOR:
-            self.padModeQ.addstr(i, 20, '|___Motor_', curses.A_REVERSE)
+            self.padModeQ.addstr(i, 30, '|__MOTOR__', curses.A_REVERSE)
             self.displayMode_motor()
         elif self.myQ.rc.mode == self.myQ.rc.MODE_PID_TUNING:
-            self.padModeQ.addstr(i, 30, '|___PID___', curses.A_REVERSE)
+            self.padModeQ.addstr(i, 40, '|___PID___', curses.A_REVERSE)
             self.displayMode_pid()
         elif self.myQ.rc.mode == self.myQ.rc.MODE_FLYING:
-            self.padModeQ.addstr(i, 40, '|__Flying_', curses.A_REVERSE)
+            self.padModeQ.addstr(i, 50, '|__Flying_', curses.A_REVERSE)
             self.displayMode_flying()
         elif self.myQ.rc.mode == self.myQ.rc.MODE_UAV:
-            self.padModeQ.addstr(i, 50, '|___UAV___', curses.A_REVERSE)
+            self.padModeQ.addstr(i, 60, '|___UAV___', curses.A_REVERSE)
             self.displayMode_uav()
-        elif self.myQ.rc.mode == 6:
-            self.padModeQ.addstr(i, 60, '|___void__', curses.A_REVERSE)
-        elif self.myQ.rc.mode == 7:
-            self.padModeQ.addstr(i, 70, '|___void__', curses.A_REVERSE)
+        elif self.myQ.rc.mode == self.myQ.rc.MODE_ABOUT:
+            self.padModeQ.addstr(i, 70, '|__ABOUT__', curses.A_REVERSE)
+            self.displayMode_about()
         self.padModeQ.addstr(i, 79, '|')
 
         self.padModeQ.refresh(0, 0, 10, 0, 20, 79)

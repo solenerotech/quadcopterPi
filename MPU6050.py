@@ -551,7 +551,7 @@ class MPU6050:
 
         return fax, fay, faz, fgx, fgy, fgz, temp
 
-    def updateOffsets(self, file_name):
+    def updateOffsets(self, file_name, fineCalib=False):
 
         x_a_cal = 0
         y_a_cal = 0
@@ -559,6 +559,11 @@ class MPU6050:
         roll_g_cal = 0
         pitch_g_cal = 0
         yaw_g_cal = 0
+
+        #in case of fine calibration, store the first measurement values
+        if fineCalib:
+            roll_a_cal_1 = self.roll_a_cal
+            pitch_a_cal_1 = self.pitch_a_cal
 
         for loop_count in range(0, self.cal_iteration):
             [ax, ay, az, temp, gx, gy, gz] = self.readSensorsRaw()
@@ -575,11 +580,35 @@ class MPU6050:
         #calculate the calibration angles of the accel.
         #---------------------------------------------------------------------------
         #ATTENTION atan2(y,x) while in excel is atan2(x,y)
-        self.roll_a_cal = round(math.atan2(y_a_cal, z_a_cal) * 180 / math.pi, 3)
-        self.pitch_a_cal = round(math.atan2(x_a_cal, z_a_cal) * 180 / math.pi, 3)
+        self.roll_a_cal = math.atan2(y_a_cal, z_a_cal) * 180 / math.pi
+        self.pitch_a_cal = math.atan2(x_a_cal, z_a_cal) * 180 / math.pi
         #Note that yaw value is not calculable using acc info
         self.yaw_a_cal = 0
 
+        #in case of  fine calibration
+        #calculate the offset considering  the reference plane not aligned with world
+        if fineCalib:
+            roll_a_cal_2 = self.roll_a_cal
+            pitch_a_cal_2 = self.pitch_a_cal
+            self.roll_a_cal = (self.roll_a_cal - roll_a_cal_1) / 2
+            self.pitch_a_cal = (self.pitch_a_cal - pitch_a_cal_1) / 2
+
+        #---------------------------------------------------------------------------
+        #auto detect if the calibration is done up side down
+        #---------------------------------------------------------------------------
+        if self.roll_a_cal > 170:
+            self.roll_a_cal = self.roll_a_cal - 180
+        elif self.roll_a_cal < -170:
+            self.roll_a_cal = self.roll_a_cal + 180
+        if self.pitch_a_cal > 170:
+            self.pitch_a_cal = self.pitch_a_cal - 180
+        elif self.pitch_a_cal < -170:
+            self.pitch_a_cal = self.pitch_a_cal + 180
+        #usefull to align the prop plane with a reference plane
+
+        #---------------------------------------------------------------------------
+        #calculation of mean value of raw  angle rate for gyro
+        #---------------------------------------------------------------------------
         self.roll_g_cal = roll_g_cal / self.cal_iteration
         self.pitch_g_cal = pitch_g_cal / self.cal_iteration
         self.yaw_g_cal = yaw_g_cal / self.cal_iteration
@@ -595,6 +624,11 @@ class MPU6050:
                 cfg_file.write('%d\n' % self.roll_g_cal)
                 cfg_file.write('%d\n' % self.pitch_g_cal)
                 cfg_file.write('%d\n' % self.yaw_g_cal)
+                if fineCalib:
+                    cfg_file.write('%f\n' % roll_a_cal_1)
+                    cfg_file.write('%f\n' % pitch_a_cal_1)
+                    cfg_file.write('%f\n' % roll_a_cal_2)
+                    cfg_file.write('%f\n' % pitch_a_cal_2)
                 cfg_file.flush()
 
         except IOError, err:

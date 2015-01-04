@@ -33,12 +33,12 @@ logger = setupLogger('myQ', True, 'sensor_test.log')
 calibIMU = False
 parser = argparse.ArgumentParser()
 parser.add_argument('-c', dest='calibIMU', action='store_true', help='Calibrate IMU')
-parser.add_argument('-s', dest='saveLog', action='store_true', help='save sensor log ')
+parser.add_argument('-i', dest='imulog', action='store_true', help='save IMU data log: myQ_sensor.csv')
 args = parser.parse_args()
 calibIMU = args.calibIMU
-saveLog = args.saveLog
+imuLog = args.imulog
 
-mySensor = sensor(savelog=saveLog, simulation=False)
+mySensor = sensor(imulog=imuLog, simulation=False)
 
 if calibIMU:
     mySensor.calibrate()
@@ -60,11 +60,10 @@ screen.timeout(500)
 try:
 
     cycling = True
-
     #cycling = False
     while cycling:
 
-        s = '     |roll: ' + str(mySensor.roll)
+        s = ' IMU |roll: ' + str(mySensor.roll)
         s += '|pitch: ' + str(mySensor.pitch)
         s += '|yaw: ' + str(mySensor.yaw)
 

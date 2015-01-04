@@ -61,6 +61,7 @@
 from quadcopter import quadcopter
 from loggingQ import setupLogger
 import argparse
+from mode_IMU import mode_IMU
 from mode_ESC import mode_ESC
 from mode_PID import mode_PID
 from mode_UAV import mode_UAV
@@ -143,8 +144,8 @@ try:
     myQ.pidY_rate.set(0, 0, 0)
 
     while myQ.rc.cycling:
-        if myQ.rc.mode == myQ.rc.MODE_INIT:
-            pass
+        if myQ.rc.mode == myQ.rc.MODE_IMU:
+            mode_IMU(myQ)
         elif myQ.rc.mode == myQ.rc.MODE_ESC:
             mode_ESC(myQ)
         elif myQ.rc.mode == myQ.rc.MODE_MOTOR:

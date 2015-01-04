@@ -56,12 +56,14 @@ class rc(threading.Thread):
         self.cycling = True
         self.command = -1
         self.mode = 0
-        self.MODE_INIT = 0
-        self.MODE_ESC = 1
-        self.MODE_MOTOR = 2
-        self.MODE_PID_TUNING = 3
-        self.MODE_FLYING = 4
-        self.MODE_UAV = 5
+        self.MODE_WELCOME = 0
+        self.MODE_IMU = 1
+        self.MODE_ESC = 2
+        self.MODE_MOTOR = 3
+        self.MODE_PID_TUNING = 4
+        self.MODE_FLYING = 5
+        self.MODE_UAV = 6
+        self.MODE_ABOUT = 7
         self.MODE_UNDEF = -1
 
     def run(self):
@@ -124,9 +126,9 @@ class rc(threading.Thread):
                     self.throttle = self.throttle - 1
 
                 if self.mode < 0:
+                    self.mode = 7
+                elif self.mode > 7:
                     self.mode = 0
-                elif self.mode > 5:
-                    self.mode = 5
 
                 if self.throttle < self.throttleMin:
                     self.throttle = self.throttleMin
